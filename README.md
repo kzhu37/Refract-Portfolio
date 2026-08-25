@@ -356,14 +356,8 @@ Priorities include:
 
 ## Collaboration and credits
 
-Refract was developed collaboratively. The original development repository is [VDuckardtt/refract](https://github.com/VDuckardtt/refract), and this repository is my curated portfolio version of the project.
+Refract was developed collaboratively by Vlad and me. The original development repository is [VDuckardtt/refract](https://github.com/VDuckardtt/refract), and this repository is my curated portfolio version of the project.
 
-AI tools, including Claude, ChatGPT, and Codex, were used during parts of research, implementation, debugging, and iteration. I treated them as engineering tools rather than as product decision-makers. User feedback, project direction, design choices, testing interpretation, and the final portfolio framing were evaluated and decided by the project team and by me during later refinement.
+Our development process combined research, prototyping, testing, and iteration across several disciplines. We started with the question of whether a display could adapt to a user's vision, then worked through the practical problems required to make that idea function as a real desktop prototype. That meant moving repeatedly between optical modeling, gaze tracking, interface design, real-time rendering, calibration, and user feedback rather than treating them as isolated parts.
 
-The Refract visual identity uses the project's prism mark and dark navy, blue, and violet design system.
-
----
-
-<p align="center">
-  <strong>Direction matters more than speed.</strong>
-</p>
+The project's technical difficulty came less from any one library or algorithm than from making those systems operate together. Prescription and calibration data had to become a usable correction model; webcam iris landmarks had to become stable screen coordinates; those coordinates had to drive a localized GPU correction over a continuously captured desktop; and the whole pipeline had to remain responsive, reversible, and understandable enough for users to test. Integrating computational optics, computer vision, WebGL/GLSL rendering, and Electron desktop systems into one working loop is what turned Refract from a collection of technical experiments into a complete engineering prototype.
