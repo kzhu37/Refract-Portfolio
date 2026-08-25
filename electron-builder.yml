@@ -4,7 +4,7 @@ directories:
   output: dist-electron
   buildResources: resources
 mac:
-  category: public.app-category.medical
+  category: public.app-category.utilities
   target: dmg
   icon: icons/refract-icon.png
   entitlements: build/entitlements.mac.plist
