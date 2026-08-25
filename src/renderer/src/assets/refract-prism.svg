@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 34" fill="none">
+  <defs>
+    <linearGradient id="prism-spectrum" x1="5" y1="31" x2="25" y2="20" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7B5CF0"/>
+      <stop offset="0.52" stop-color="#4B8AF0"/>
+      <stop offset="1" stop-color="#BDEBFF"/>
+    </linearGradient>
+    <linearGradient id="prism-base" x1="5" y1="31" x2="26" y2="31" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7B5CF0"/>
+      <stop offset="0.55" stop-color="#BDEBFF"/>
+      <stop offset="1" stop-color="#F8FAFF"/>
+    </linearGradient>
+  </defs>
+  <path
+    d="M20 3.2 36 30.8H4L20 3.2Z"
+    stroke="#F8FAFF"
+    stroke-width="3.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M4.1 30.7 11.8 17.4"
+    stroke="url(#prism-spectrum)"
+    stroke-width="3.25"
+    stroke-linecap="round"
+  />
+  <path
+    d="M4.2 30.8h20.4"
+    stroke="url(#prism-base)"
+    stroke-width="3.25"
+    stroke-linecap="round"
+  />
+</svg>

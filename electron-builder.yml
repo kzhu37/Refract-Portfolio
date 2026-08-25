@@ -1,0 +1,28 @@
+appId: com.refract.app
+productName: Refract
+directories:
+  output: dist-electron
+  buildResources: resources
+mac:
+  category: public.app-category.medical
+  target: dmg
+  icon: icons/refract-icon.png
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+win:
+  target: nsis
+  icon: icons/refract-icon.ico
+nsis:
+  installerIcon: icons/refract-icon.ico
+  uninstallerIcon: icons/refract-icon.ico
+  installerHeaderIcon: icons/refract-icon.ico
+linux:
+  target: AppImage
+  icon: icons/refract-icon.png
+files:
+  - out/**
+extraResources:
+  - from: resources/icons/refract-icon.png
+    to: icons/refract-icon.png
+  - from: resources/icons/refract-tray.png
+    to: icons/refract-tray.png
