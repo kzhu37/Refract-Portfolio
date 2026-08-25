@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">Refract computational optics pipeline</title>
+  <desc id="desc">A diagram showing prescription values converted into a directional point spread function, then a correction kernel, then a localized GPU correction.</desc>
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070B1E"/>
+      <stop offset="1" stop-color="#10183B"/>
+    </linearGradient>
+    <radialGradient id="psfA">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="0.35" stop-color="#8FA8FF" stop-opacity="0.62"/>
+      <stop offset="1" stop-color="#4B8AF0" stop-opacity="0"/>
+    </radialGradient>
+    <marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#6D8CF5"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="620" rx="28" fill="url(#bg2)"/>
+  <text x="70" y="78" fill="#FFFFFF" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="34" font-weight="700">From prescription to pixels</text>
+  <text x="70" y="112" fill="#8BADC8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17">A pragmatic real-time model that turns refractive parameters into a GPU convolution kernel</text>
+
+  <g font-family="Inter,Segoe UI,Arial,sans-serif">
+    <rect x="70" y="185" width="245" height="260" rx="20" fill="#0F1635" stroke="#4B8AF0" stroke-opacity="0.32"/>
+    <text x="96" y="222" fill="#7FAEFF" font-size="14" font-weight="700" letter-spacing="1.1">PRESCRIPTION</text>
+    <text x="96" y="265" fill="#FFFFFF" font-size="22" font-weight="650">OD example</text>
+    <text x="96" y="312" fill="#8BADC8" font-size="17">Sphere</text>
+    <text x="268" y="312" fill="#FFFFFF" font-size="17" text-anchor="end">-2.00 D</text>
+    <text x="96" y="350" fill="#8BADC8" font-size="17">Cylinder</text>
+    <text x="268" y="350" fill="#FFFFFF" font-size="17" text-anchor="end">-0.75 D</text>
+    <text x="96" y="388" fill="#8BADC8" font-size="17">Axis</text>
+    <text x="268" y="388" fill="#FFFFFF" font-size="17" text-anchor="end">110°</text>
+
+    <rect x="445" y="185" width="310" height="260" rx="20" fill="#0F1635" stroke="#7B5CF0" stroke-opacity="0.35"/>
+    <text x="472" y="222" fill="#A493FF" font-size="14" font-weight="700" letter-spacing="1.1">POINT SPREAD FUNCTION</text>
+    <ellipse cx="600" cy="328" rx="88" ry="36" transform="rotate(20 600 328)" fill="url(#psfA)"/>
+    <ellipse cx="600" cy="328" rx="62" ry="25" transform="rotate(20 600 328)" fill="none" stroke="#C4B9FF" stroke-opacity="0.5"/>
+    <line x1="540" y1="377" x2="660" y2="279" stroke="#7B5CF0" stroke-opacity="0.35" stroke-dasharray="6 7"/>
+    <text x="472" y="410" fill="#8BADC8" font-size="15">Rotated anisotropic Gaussian</text>
+
+    <rect x="885" y="185" width="245" height="260" rx="20" fill="#0F1635" stroke="#4B8AF0" stroke-opacity="0.32"/>
+    <text x="912" y="222" fill="#7FAEFF" font-size="14" font-weight="700" letter-spacing="1.1">REAL-TIME OUTPUT</text>
+    <rect x="917" y="268" width="181" height="92" rx="12" fill="#090D24" stroke="#304877"/>
+    <text x="934" y="301" fill="#64748B" font-size="14">The screen adapts</text>
+    <text x="934" y="329" fill="#FFFFFF" font-size="20" font-weight="650">around attention.</text>
+    <circle cx="1045" cy="337" r="52" fill="#4B8AF0" opacity="0.11"/>
+    <circle cx="1045" cy="337" r="34" fill="none" stroke="#6D8CF5" stroke-opacity="0.6"/>
+    <text x="912" y="410" fill="#8BADC8" font-size="15">Localized WebGL2 convolution</text>
+
+    <path d="M315 315 C365 315 385 315 435 315" fill="none" stroke="#6D8CF5" stroke-width="2.6" marker-end="url(#arrow2)"/>
+    <path d="M755 315 C805 315 825 315 875 315" fill="none" stroke="#6D8CF5" stroke-width="2.6" marker-end="url(#arrow2)"/>
+  </g>
+
+  <text x="70" y="525" fill="#8BADC8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15">Current implementation: Gaussian PSF + normalized unsharp kernel.</text>
+  <text x="70" y="554" fill="#8BADC8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15">Experimental path: frequency-domain Wiener deconvolution exists separately and is not the default live correction path.</text>
+</svg>
