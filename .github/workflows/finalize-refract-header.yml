@@ -1,0 +1,35 @@
+name: Finalize Refract header
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/finalize-refract-header.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  finalize-header:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Switch README to native header SVG
+        shell: bash
+        run: |
+          sed -i 's#docs/media/refract-header.jpg#docs/media/refract-header.svg#g' README.md
+          git rm docs/media/refract-header.jpg
+          git rm .github/workflows/finalize-refract-header.yml
+
+      - name: Commit final header fix
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md
+          git commit -m 'docs: finalize Refract header asset'
+          git pull --rebase origin main
+          git push origin HEAD:main
