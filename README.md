@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/media/refract-hero.svg" alt="Refract, Clarity, Perfected" width="100%">
+  <img src="docs/media/refract-header.jpg" alt="Refract, Clarity, Perfected" width="100%">
 </p>
 
 <p align="center">
