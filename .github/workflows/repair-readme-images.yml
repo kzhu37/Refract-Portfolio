@@ -1,0 +1,80 @@
+name: Repair README images
+
+on:
+  push:
+    paths:
+      - .github/workflows/repair-readme-images.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Build renderer
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install screenshot browser
+        run: |
+          npx --yes playwright@1.55.0 install --with-deps chromium
+
+      - name: Capture valid renderer screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m http.server 4173 --directory out/renderer > /tmp/refract-renderer.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/index.html >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          npx --yes playwright@1.55.0 screenshot --browser chromium --viewport-size "1600,900" --wait-for-timeout 2500 "http://127.0.0.1:4173/index.html#/" docs/media/refract-home.png
+          npx --yes playwright@1.55.0 screenshot --browser chromium --viewport-size "1600,900" --wait-for-timeout 2500 "http://127.0.0.1:4173/index.html#/prescription" docs/media/refract-prescription.png
+
+      - name: Verify and wire repaired assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet pillow
+          python - <<'PY'
+          from PIL import Image
+          for path in (
+              "docs/media/refract-home.png",
+              "docs/media/refract-prescription.png",
+              "docs/media/refract-header.jpg",
+          ):
+              with Image.open(path) as image:
+                  image.verify()
+                  print(path, image.size, image.format)
+          PY
+          cp docs/media/refract-header.jpg docs/media/refract-header-display.jpg
+          sed -i 's#docs/media/refract-header.jpg#docs/media/refract-header-display.jpg#g' README.md
+          sed -i 's#docs/media/refract-home.webp#docs/media/refract-home.png#g' README.md
+          sed -i 's#docs/media/refract-prescription.webp#docs/media/refract-prescription.png#g' README.md
+          git rm -f docs/media/refract-home.webp docs/media/refract-prescription.webp
+          git rm .github/workflows/repair-readme-images.yml
+
+      - name: Commit repaired assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md docs/media/refract-home.png docs/media/refract-prescription.png docs/media/refract-header-display.jpg
+          git commit -m 'Repair Refract README image assets'
+          git push
