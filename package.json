@@ -1,7 +1,7 @@
 {
   "name": "refract",
   "version": "1.0.0",
-  "description": "Refract: gaze-based prescription assistant",
+  "description": "Refract: experimental gaze-aware adaptive display prototype",
   "main": "./out/main/index.js",
   "author": "",
   "license": "MIT",
