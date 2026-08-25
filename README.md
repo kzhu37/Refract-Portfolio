@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="src/renderer/src/assets/refract-prism.svg" alt="Refract prism logo" width="112">
+  <img src="docs/media/refract-hero.svg" alt="Refract, Clarity, Perfected" width="100%">
 </p>
-
-<h1 align="center">Refract</h1>
 
 <p align="center">
   <strong>An experimental gaze-aware adaptive display prototype built with computational optics, computer vision, and real-time GPU rendering.</strong>
