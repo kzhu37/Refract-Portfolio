@@ -13,7 +13,7 @@
   </defs>
   <rect width="1200" height="620" rx="28" fill="url(#bg3)"/>
   <text x="70" y="78" fill="#FFFFFF" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="34" font-weight="700">Testing changed the product</text>
-  <text x="70" y="112" fill="#8BADC8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17">Presentation-era survey results and the design decisions that followed</text>
+  <text x="70" y="112" fill="#8BADC8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17">Early survey results and the design decisions that followed</text>
 
   <g font-family="Inter,Segoe UI,Arial,sans-serif">
     <rect x="70" y="170" width="230" height="170" rx="18" fill="#0F1635" stroke="#4B8AF0" stroke-opacity="0.35"/>

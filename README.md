@@ -51,7 +51,7 @@ This architecture lets Refract affect content outside its own React interface. T
 
 ## My role
 
-Refract began as a **collaborative project**, and I do not present the original core codebase as solo work. My contribution combined product thinking, user research, iteration, presentation, and later engineering refinement.
+Refract began as a **collaborative project**, and I do not present the original core codebase as solo work. My contribution combined product thinking, user research, iteration, product communication, and later engineering refinement.
 
 | Area | My contribution |
 | --- | --- |
@@ -187,7 +187,7 @@ The physical calibration work was especially important. A vision test cannot rel
   <img src="docs/media/user-testing.svg" alt="Refract testing summary with initial responses, follow-up survey results, and feedback-driven design changes">
 </p>
 
-The presentation-era testing process produced **75 initial survey responses** and a later follow-up of approximately **50 respondents**. In that follow-up, **93% reported that they were still using Refract**, while **22% reported that they had shared it with someone else**.
+The early testing process produced **75 initial survey responses** and a later follow-up of approximately **50 respondents**. In that follow-up, **93% reported that they were still using Refract**, while **22% reported that they had shared it with someone else**.
 
 These are exploratory, self-reported survey results. They are not product telemetry, controlled retention measurements, or evidence of clinical efficacy.
 
