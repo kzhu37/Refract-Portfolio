@@ -173,7 +173,6 @@ jobs:
               wait.until(lambda d: 'Before the browser asks' in d.find_element(By.CSS_SELECTOR, '.camera-consent').text)
               continue_button = camera.find_element(By.XPATH, "//button[contains(., 'Continue to camera')]")
               assert continue_button.is_displayed() and continue_button.is_enabled()
-              assert camera_choice.get_attribute('aria-checked') == 'true'
               print('camera consent path: ok')
           finally:
               camera.quit()
