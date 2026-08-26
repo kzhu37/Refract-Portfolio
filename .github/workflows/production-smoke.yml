@@ -1,0 +1,171 @@
+name: Production Browser Smoke
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install browser test driver
+        run: python -m pip install --disable-pip-version-check selenium
+
+      - name: Exercise production demo
+        env:
+          DEMO_URL: https://refract-portfolio-xiangseanzhu-7370.vercel.app
+        run: |
+          python - <<'PY'
+          import os
+          import time
+          from selenium import webdriver
+          from selenium.webdriver.common.action_chains import ActionChains
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.common.keys import Keys
+          from selenium.webdriver.support.ui import WebDriverWait
+          from selenium.webdriver.support import expected_conditions as EC
+
+          URL = os.environ['DEMO_URL'].rstrip('/')
+
+          def make_driver(camera='normal'):
+              options = webdriver.ChromeOptions()
+              options.add_argument('--headless=new')
+              options.add_argument('--no-sandbox')
+              options.add_argument('--disable-dev-shm-usage')
+              options.add_argument('--enable-webgl')
+              options.add_argument('--ignore-gpu-blocklist')
+              options.add_argument('--enable-unsafe-swiftshader')
+              options.add_argument('--use-gl=angle')
+              options.add_argument('--use-angle=swiftshader')
+              options.set_capability('goog:loggingPrefs', {'browser': 'ALL'})
+              if camera == 'deny':
+                  options.add_experimental_option('prefs', {'profile.default_content_setting_values.media_stream_camera': 2})
+              elif camera == 'fake':
+                  options.add_argument('--use-fake-device-for-media-stream')
+                  options.add_argument('--use-fake-ui-for-media-stream')
+              return webdriver.Chrome(options=options)
+
+          def ready(driver, timeout=25):
+              wait = WebDriverWait(driver, timeout)
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'h1')))
+              wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '.pipeline-status').get_attribute('data-render-status') != 'initializing')
+              return wait
+
+          driver = make_driver()
+          try:
+              driver.set_window_size(1440, 1100)
+              driver.get(URL)
+              wait = ready(driver)
+              assert 'Interactive Browser Demo' in driver.title
+              assert 'correction pipeline work in your browser' in driver.find_element(By.CSS_SELECTOR, 'h1').text
+              status = driver.find_element(By.CSS_SELECTOR, '.pipeline-status').get_attribute('data-render-status')
+              webgl2 = driver.execute_script("return !!document.createElement('canvas').getContext('webgl2')")
+              print('production render status:', status, 'WebGL2:', webgl2)
+              assert webgl2, 'GitHub-hosted Chrome did not expose WebGL2'
+              assert status == 'ready', driver.find_element(By.CSS_SELECTOR, '.pipeline-status').text
+
+              stage = driver.find_element(By.CSS_SELECTOR, '[data-testid="correction-stage"]')
+              def checksum():
+                  return driver.execute_script('''
+                    const c=document.querySelector('.correction-canvas');
+                    const gl=c.getContext('webgl2');
+                    const w=c.width,h=c.height,px=new Uint8Array(w*h*4);
+                    gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,px);
+                    let sum=0; for(let i=0;i<px.length;i+=64){sum=(sum+px[i])>>>0;} return [w,h,sum];
+                  ''')
+              ActionChains(driver).move_to_element_with_offset(stage, 160, 180).perform(); time.sleep(0.4)
+              a = checksum()
+              ActionChains(driver).move_to_element_with_offset(stage, 520, 280).perform(); time.sleep(0.4)
+              b = checksum()
+              print('canvas checksums:', a, b)
+              assert a[0] > 0 and a[1] > 0 and b[0] == a[0] and b[1] == a[1]
+              assert a[2] != 0 and b[2] != 0
+
+              toggle = driver.find_element(By.CSS_SELECTOR, '[role="switch"]')
+              assert toggle.get_attribute('aria-checked') == 'true'
+              toggle.click(); assert toggle.get_attribute('aria-checked') == 'false'
+              toggle.click(); assert toggle.get_attribute('aria-checked') == 'true'
+
+              driver.find_element(By.XPATH, "//button[contains(., 'Directional')]").click()
+              assert driver.find_element(By.ID, 'sphere').get_attribute('value') == '-1.75'
+              assert driver.find_element(By.ID, 'cylinder').get_attribute('value') == '-1.25'
+              assert driver.find_element(By.ID, 'axis').get_attribute('value') == '35'
+              driver.find_element(By.XPATH, "//button[normalize-space()='Reset']").click()
+              assert driver.find_element(By.ID, 'sphere').get_attribute('value') == '-2.25'
+
+              compare = driver.find_element(By.XPATH, "//button[contains(., 'Hold for original')]")
+              compare.send_keys(Keys.SPACE); time.sleep(0.15)
+              assert 'Original source' in driver.find_element(By.CSS_SELECTOR, '.stage-corner-label').text
+
+              driver.set_window_size(390, 844); time.sleep(0.2)
+              widths = driver.execute_script('return [document.documentElement.scrollWidth, document.documentElement.clientWidth]')
+              print('mobile widths:', widths)
+              assert widths[0] == widths[1]
+
+              severe = [x for x in driver.get_log('browser') if x['level'] == 'SEVERE']
+              print('severe console entries:', severe)
+              assert not severe
+          finally:
+              driver.quit()
+
+          fallback = make_driver()
+          try:
+              fallback.get(URL + '/?webgl=off')
+              wait = ready(fallback)
+              status = fallback.find_element(By.CSS_SELECTOR, '.pipeline-status').get_attribute('data-render-status')
+              text = fallback.find_element(By.CSS_SELECTOR, '.pipeline-status').text
+              print('forced fallback:', status, text)
+              assert status == 'unsupported'
+              assert 'fallback' in text.lower()
+              assert fallback.find_element(By.CSS_SELECTOR, '.source-canvas').is_displayed()
+          finally:
+              fallback.quit()
+
+          denied = make_driver('deny')
+          try:
+              denied.get(URL)
+              wait = ready(denied)
+              denied.find_element(By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]").click()
+              assert 'Before the browser asks' in denied.find_element(By.CSS_SELECTOR, '.camera-consent').text
+              denied.find_element(By.XPATH, "//button[contains(., 'Continue to camera')]").click()
+              state = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '.camera-state')))
+              wait.until(lambda d: 'denied' in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower() or 'unavailable' in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower() or 'could not start' in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower())
+              print('camera denied state:', state.text)
+              assert denied.find_element(By.XPATH, "//button[@role='radio' and normalize-space()='Cursor']").get_attribute('aria-checked') == 'true'
+          finally:
+              denied.quit()
+
+          accepted = make_driver('fake')
+          try:
+              accepted.get(URL)
+              wait = ready(accepted)
+              accepted.find_element(By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]").click()
+              accepted.find_element(By.XPATH, "//button[contains(., 'Continue to camera')]").click()
+              wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.camera-state') and ('active' in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower() or 'temporarily unavailable' in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower() or 'could not start' in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower()))
+              print('fake-camera state:', accepted.find_element(By.CSS_SELECTOR, '.camera-state').text)
+          finally:
+              accepted.quit()
+
+          deep = make_driver()
+          try:
+              deep.get(URL + '/portfolio-check')
+              ready(deep)
+              assert 'correction pipeline work in your browser' in deep.find_element(By.CSS_SELECTOR, 'h1').text
+              assert 'localhost' not in deep.page_source.lower()
+              print('deep-link refresh path: ok')
+          finally:
+              deep.quit()
+          PY
