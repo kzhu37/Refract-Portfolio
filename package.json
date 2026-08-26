@@ -8,15 +8,18 @@
   "scripts": {
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
+    "dev:web-demo": "vite --config vite.web-demo.config.ts",
     "generate:icons": "electron scripts/generate-icons.cjs",
     "build": "electron-vite build",
+    "build:web-demo": "vite build --config vite.web-demo.config.ts",
     "postinstall": "electron-builder install-app-deps",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux",
-    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web && npm run typecheck:demo",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
-    "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false"
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
+    "typecheck:demo": "tsc --noEmit -p tsconfig.demo.json --composite false"
   },
   "dependencies": {
     "@mediapipe/face_mesh": "^0.4.1633559619",

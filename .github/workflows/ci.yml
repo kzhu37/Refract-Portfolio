@@ -32,3 +32,6 @@ jobs:
 
       - name: Build application
         run: npm run build
+
+      - name: Build browser demo
+        run: npm run build:web-demo

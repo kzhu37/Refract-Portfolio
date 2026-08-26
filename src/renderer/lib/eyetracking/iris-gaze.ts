@@ -302,7 +302,10 @@ export class IrisGazeTracker {
     }
     this.latestGaze = point
 
-    window.electronAPI.sendGazeUpdate(point)
+    // The browser portfolio demo reuses this tracker without an Electron
+    // preload bridge. Electron still receives the same IPC update, while the
+    // optional callback remains the browser adapter's source of gaze points.
+    window.electronAPI?.sendGazeUpdate(point)
     this.onGaze?.(point)
   }
 
