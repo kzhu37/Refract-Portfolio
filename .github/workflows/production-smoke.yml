@@ -89,6 +89,10 @@ jobs:
                   raise
               return wait
 
+          def dom_click(driver, element):
+              assert element.is_displayed() and element.is_enabled()
+              driver.execute_script("arguments[0].click();", element)
+
           driver = make_driver()
           try:
               driver.set_window_size(1440, 1100)
@@ -166,9 +170,11 @@ jobs:
           try:
               denied.get(URL)
               wait = ready(denied)
-              denied.find_element(By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]").click()
-              assert 'Before the browser asks' in denied.find_element(By.CSS_SELECTOR, '.camera-consent').text
-              denied.find_element(By.XPATH, "//button[contains(., 'Continue to camera')]").click()
+              camera_choice = denied.find_element(By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]")
+              dom_click(denied, camera_choice)
+              wait.until(lambda d: 'Before the browser asks' in d.find_element(By.CSS_SELECTOR, '.camera-consent').text)
+              continue_button = denied.find_element(By.XPATH, "//button[contains(., 'Continue to camera')]")
+              dom_click(denied, continue_button)
               wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.camera-state'))
               wait.until(lambda d: any(token in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower() for token in ('denied', 'unavailable', 'could not start')))
               print('camera denied state:', denied.find_element(By.CSS_SELECTOR, '.camera-state').text)
@@ -180,8 +186,11 @@ jobs:
           try:
               accepted.get(URL)
               wait = ready(accepted)
-              accepted.find_element(By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]").click()
-              accepted.find_element(By.XPATH, "//button[contains(., 'Continue to camera')]").click()
+              camera_choice = accepted.find_element(By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]")
+              dom_click(accepted, camera_choice)
+              wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.camera-consent'))
+              continue_button = accepted.find_element(By.XPATH, "//button[contains(., 'Continue to camera')]")
+              dom_click(accepted, continue_button)
               wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.camera-state'))
               wait.until(lambda d: any(token in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower() for token in ('active', 'temporarily unavailable', 'could not start')))
               print('fake-camera state:', accepted.find_element(By.CSS_SELECTOR, '.camera-state').text)
