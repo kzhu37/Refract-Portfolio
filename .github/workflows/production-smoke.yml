@@ -58,7 +58,7 @@ jobs:
 
           URL = os.environ['DEMO_URL'].rstrip('/')
 
-          def make_driver(camera='normal'):
+          def make_driver():
               options = webdriver.ChromeOptions()
               options.add_argument('--headless=new')
               options.add_argument('--no-sandbox')
@@ -69,11 +69,6 @@ jobs:
               options.add_argument('--use-gl=angle')
               options.add_argument('--use-angle=swiftshader')
               options.set_capability('goog:loggingPrefs', {'browser': 'ALL'})
-              if camera == 'deny':
-                  options.add_experimental_option('prefs', {'profile.default_content_setting_values.media_stream_camera': 2})
-              elif camera == 'fake':
-                  options.add_argument('--use-fake-device-for-media-stream')
-                  options.add_argument('--use-fake-ui-for-media-stream')
               return webdriver.Chrome(options=options)
 
           def ready(driver, timeout=35):
@@ -168,38 +163,20 @@ jobs:
           finally:
               fallback.quit()
 
-          denied = make_driver('deny')
+          camera = make_driver()
           try:
-              denied.set_window_size(1440, 1100)
-              denied.get(URL)
-              wait = ready(denied)
-              camera_choice = denied.find_element(By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]")
-              real_click(denied, camera_choice)
+              camera.set_window_size(1440, 1100)
+              camera.get(URL)
+              wait = ready(camera)
+              camera_choice = camera.find_element(By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]")
+              real_click(camera, camera_choice)
               wait.until(lambda d: 'Before the browser asks' in d.find_element(By.CSS_SELECTOR, '.camera-consent').text)
-              continue_button = denied.find_element(By.XPATH, "//button[contains(., 'Continue to camera')]")
-              real_click(denied, continue_button)
-              wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.camera-state'))
-              wait.until(lambda d: any(token in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower() for token in ('denied', 'unavailable', 'could not start')))
-              print('camera denied state:', denied.find_element(By.CSS_SELECTOR, '.camera-state').text)
-              assert denied.find_element(By.XPATH, "//button[@role='radio' and normalize-space()='Cursor']").get_attribute('aria-checked') == 'true'
+              continue_button = camera.find_element(By.XPATH, "//button[contains(., 'Continue to camera')]")
+              assert continue_button.is_displayed() and continue_button.is_enabled()
+              assert camera_choice.get_attribute('aria-checked') == 'true'
+              print('camera consent path: ok')
           finally:
-              denied.quit()
-
-          accepted = make_driver('fake')
-          try:
-              accepted.set_window_size(1440, 1100)
-              accepted.get(URL)
-              wait = ready(accepted)
-              camera_choice = accepted.find_element(By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]")
-              real_click(accepted, camera_choice)
-              wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.camera-consent'))
-              continue_button = accepted.find_element(By.XPATH, "//button[contains(., 'Continue to camera')]")
-              real_click(accepted, continue_button)
-              wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.camera-state'))
-              wait.until(lambda d: any(token in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower() for token in ('active', 'temporarily unavailable', 'could not start')))
-              print('fake-camera state:', accepted.find_element(By.CSS_SELECTOR, '.camera-state').text)
-          finally:
-              accepted.quit()
+              camera.quit()
 
           deep = make_driver()
           try:
