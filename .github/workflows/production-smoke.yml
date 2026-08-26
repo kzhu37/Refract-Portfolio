@@ -46,6 +46,7 @@ jobs:
       - name: Exercise production demo
         run: |
           python - <<'PY'
+          import hashlib
           import os
           import time
           from selenium import webdriver
@@ -103,24 +104,17 @@ jobs:
               assert status == 'ready', driver.find_element(By.CSS_SELECTOR, '.pipeline-status').text
 
               stage = driver.find_element(By.CSS_SELECTOR, '[data-testid="correction-stage"]')
-              def checksum():
-                  return driver.execute_script('''
-                    const c=document.querySelector('.correction-canvas');
-                    const gl=c.getContext('webgl2');
-                    const w=c.width,h=c.height,px=new Uint8Array(w*h*4);
-                    gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,px);
-                    let sum=0; for(let i=0;i<px.length;i+=64){sum=(sum+px[i])>>>0;} return [w,h,sum];
-                  ''')
+              canvas_size = driver.execute_script("const c=document.querySelector('.correction-canvas'); return [c.width,c.height]")
+              assert canvas_size[0] > 0 and canvas_size[1] > 0, f'correction canvas has invalid size: {canvas_size}'
 
               driver.execute_script("arguments[0].scrollIntoView({block:'center',inline:'center'});", stage)
               time.sleep(0.2)
-              ActionChains(driver).move_to_element(stage).move_by_offset(-60, -40).perform(); time.sleep(0.4)
-              a = checksum()
-              ActionChains(driver).move_to_element(stage).move_by_offset(60, 40).perform(); time.sleep(0.4)
-              b = checksum()
-              print('canvas checksums:', a, b)
-              assert a[0] > 0 and a[1] > 0 and b[0] == a[0] and b[1] == a[1]
-              assert a[2] != 0 and b[2] != 0
+              ActionChains(driver).move_to_element(stage).move_by_offset(-60, -40).perform(); time.sleep(0.5)
+              a = hashlib.sha256(stage.screenshot_as_png).hexdigest()
+              ActionChains(driver).move_to_element(stage).move_by_offset(60, 40).perform(); time.sleep(0.5)
+              b = hashlib.sha256(stage.screenshot_as_png).hexdigest()
+              print('stage screenshot hashes:', a, b, 'canvas size:', canvas_size)
+              assert a != b, 'moving the cursor did not change the rendered correction-stage output'
 
               toggle = driver.find_element(By.CSS_SELECTOR, '[role="switch"]')
               assert toggle.get_attribute('aria-checked') == 'true'
