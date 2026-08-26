@@ -134,9 +134,10 @@ jobs:
               print('reset: ok')
 
               compare = driver.find_element(By.XPATH, "//button[contains(., 'Hold for original')]")
-              driver.execute_script("arguments[0].dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,pointerId:1,pointerType:'mouse',isPrimary:true}));", compare)
+              hold = ActionChains(driver).move_to_element(compare).click_and_hold(compare)
+              hold.perform()
               wait.until(lambda d: 'Original source' in d.find_element(By.CSS_SELECTOR, '.stage-corner-label').text)
-              driver.execute_script("arguments[0].dispatchEvent(new PointerEvent('pointerup',{bubbles:true,cancelable:true,pointerId:1,pointerType:'mouse',isPrimary:true}));", compare)
+              ActionChains(driver).release(compare).perform()
               wait.until(lambda d: 'Original source' not in d.find_element(By.CSS_SELECTOR, '.stage-corner-label').text)
               print('original comparison: ok')
 
