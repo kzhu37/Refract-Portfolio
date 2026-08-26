@@ -11,11 +11,25 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
+    env:
+      DEMO_URL: https://refract-portfolio-xiangseanzhu-7370.vercel.app
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: HTTP production preflight
+        run: |
+          set -euo pipefail
+          code=$(curl -L --max-time 30 -sS -o /tmp/refract-production.html -w '%{http_code}' "$DEMO_URL")
+          echo "HTTP status: $code"
+          echo "Title: $(grep -o '<title>[^<]*</title>' /tmp/refract-production.html | head -1 || true)"
+          echo "Body preview:"
+          head -c 500 /tmp/refract-production.html | tr '\n' ' '
+          echo
+          test "$code" = "200"
+          grep -q 'Refract' /tmp/refract-production.html
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -26,13 +40,12 @@ jobs:
         run: python -m pip install --disable-pip-version-check selenium
 
       - name: Exercise production demo
-        env:
-          DEMO_URL: https://refract-portfolio-xiangseanzhu-7370.vercel.app
         run: |
           python - <<'PY'
           import os
           import time
           from selenium import webdriver
+          from selenium.common.exceptions import TimeoutException
           from selenium.webdriver.common.action_chains import ActionChains
           from selenium.webdriver.common.by import By
           from selenium.webdriver.common.keys import Keys
@@ -59,17 +72,24 @@ jobs:
                   options.add_argument('--use-fake-ui-for-media-stream')
               return webdriver.Chrome(options=options)
 
-          def ready(driver, timeout=25):
+          def ready(driver, timeout=35):
               wait = WebDriverWait(driver, timeout)
-              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'h1')))
-              wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '.pipeline-status').get_attribute('data-render-status') != 'initializing')
+              try:
+                  wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'h1')))
+                  wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '.pipeline-status').get_attribute('data-render-status') != 'initializing')
+              except TimeoutException:
+                  print('TIMEOUT current URL:', driver.current_url)
+                  print('TIMEOUT title:', driver.title)
+                  print('TIMEOUT body:', driver.find_element(By.TAG_NAME, 'body').text[:1600] if driver.find_elements(By.TAG_NAME, 'body') else '(no body)')
+                  print('TIMEOUT console:', driver.get_log('browser'))
+                  raise
               return wait
 
           driver = make_driver()
           try:
               driver.set_window_size(1440, 1100)
               driver.get(URL)
-              wait = ready(driver)
+              ready(driver)
               assert 'Interactive Browser Demo' in driver.title
               assert 'correction pipeline work in your browser' in driver.find_element(By.CSS_SELECTOR, 'h1').text
               status = driver.find_element(By.CSS_SELECTOR, '.pipeline-status').get_attribute('data-render-status')
@@ -108,8 +128,9 @@ jobs:
               assert driver.find_element(By.ID, 'sphere').get_attribute('value') == '-2.25'
 
               compare = driver.find_element(By.XPATH, "//button[contains(., 'Hold for original')]")
-              compare.send_keys(Keys.SPACE); time.sleep(0.15)
+              ActionChains(driver).key_down(Keys.SPACE, compare).pause(0.15).perform()
               assert 'Original source' in driver.find_element(By.CSS_SELECTOR, '.stage-corner-label').text
+              ActionChains(driver).key_up(Keys.SPACE, compare).perform()
 
               driver.set_window_size(390, 844); time.sleep(0.2)
               widths = driver.execute_script('return [document.documentElement.scrollWidth, document.documentElement.clientWidth]')
@@ -125,7 +146,7 @@ jobs:
           fallback = make_driver()
           try:
               fallback.get(URL + '/?webgl=off')
-              wait = ready(fallback)
+              ready(fallback)
               status = fallback.find_element(By.CSS_SELECTOR, '.pipeline-status').get_attribute('data-render-status')
               text = fallback.find_element(By.CSS_SELECTOR, '.pipeline-status').text
               print('forced fallback:', status, text)
@@ -142,9 +163,9 @@ jobs:
               denied.find_element(By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]").click()
               assert 'Before the browser asks' in denied.find_element(By.CSS_SELECTOR, '.camera-consent').text
               denied.find_element(By.XPATH, "//button[contains(., 'Continue to camera')]").click()
-              state = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '.camera-state')))
-              wait.until(lambda d: 'denied' in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower() or 'unavailable' in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower() or 'could not start' in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower())
-              print('camera denied state:', state.text)
+              wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.camera-state'))
+              wait.until(lambda d: any(token in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower() for token in ('denied', 'unavailable', 'could not start')))
+              print('camera denied state:', denied.find_element(By.CSS_SELECTOR, '.camera-state').text)
               assert denied.find_element(By.XPATH, "//button[@role='radio' and normalize-space()='Cursor']").get_attribute('aria-checked') == 'true'
           finally:
               denied.quit()
@@ -155,7 +176,8 @@ jobs:
               wait = ready(accepted)
               accepted.find_element(By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]").click()
               accepted.find_element(By.XPATH, "//button[contains(., 'Continue to camera')]").click()
-              wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.camera-state') and ('active' in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower() or 'temporarily unavailable' in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower() or 'could not start' in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower()))
+              wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '.camera-state'))
+              wait.until(lambda d: any(token in d.find_element(By.CSS_SELECTOR, '.camera-state').text.lower() for token in ('active', 'temporarily unavailable', 'could not start')))
               print('fake-camera state:', accepted.find_element(By.CSS_SELECTOR, '.camera-state').text)
           finally:
               accepted.quit()
