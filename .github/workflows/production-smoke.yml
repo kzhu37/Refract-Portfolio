@@ -126,7 +126,7 @@ jobs:
               assert driver.find_element(By.ID, 'cylinder').get_attribute('value') == '-1.25'
               assert driver.find_element(By.ID, 'axis').get_attribute('value') == '35'
               driver.find_element(By.XPATH, "//button[normalize-space()='Reset']").click()
-              assert driver.find_element(By.ID, 'sphere').get_attribute('value') == '-2.25'
+              WebDriverWait(driver, 5).until(lambda d: d.find_element(By.ID, 'sphere').get_attribute('value') == '-2.25')
 
               compare = driver.find_element(By.XPATH, "//button[contains(., 'Hold for original')]")
               ActionChains(driver).key_down(Keys.SPACE, compare).pause(0.15).perform()
