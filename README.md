@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/media/refract-header.jpg" alt="Refract, Clarity, Rethought" width="100%">
+  <img src="docs/media/refract-header-display.jpg" alt="Refract, Clarity, Rethought" width="100%">
 </p>
 
 <p align="center">
@@ -15,7 +15,7 @@ Refract explores a simple question: **what if the screen could adapt to the user
 The desktop application captures the display, models an approximate refractive blur from prescription and calibration parameters, tracks the user's gaze or cursor, and applies localized GPU-accelerated correction around the point of attention. The result is a working engineering prototype where optics, computer vision, numerical calibration, desktop systems, physical setup, and human comfort all have to operate in one loop.
 
 <p align="center">
-  <img src="docs/media/refract-home.webp" alt="Refract desktop application home screen with correction status, prescription values, and controls" width="100%">
+  <img src="docs/media/refract-home.png" alt="Refract desktop application home screen with correction status, prescription values, and controls" width="100%">
 </p>
 
 <p align="center">
@@ -196,7 +196,7 @@ Refract can start from a known prescription, but it also includes an experimenta
 <table>
   <tr>
     <td width="50%">
-      <img src="docs/media/refract-prescription.webp" alt="Refract prescription editor for OD and OS sphere, cylinder, add, PD, and date values">
+      <img src="docs/media/refract-prescription.png" alt="Refract prescription editor for OD and OS sphere, cylinder, add, PD, and date values">
     </td>
     <td width="50%">
       <img src="docs/media/refract-vision-acuity.webp" alt="Refract Snellen-style acuity test with calibrated letter rows and response controls">
