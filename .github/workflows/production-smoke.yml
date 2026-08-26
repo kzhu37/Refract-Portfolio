@@ -134,9 +134,10 @@ jobs:
               print('reset: ok')
 
               compare = driver.find_element(By.XPATH, "//button[contains(., 'Hold for original')]")
-              driver.execute_script("arguments[0].focus(); arguments[0].dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true,cancelable:true}));", compare)
+              driver.execute_script("arguments[0].dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,pointerId:1,pointerType:'mouse',isPrimary:true}));", compare)
               wait.until(lambda d: 'Original source' in d.find_element(By.CSS_SELECTOR, '.stage-corner-label').text)
-              driver.execute_script("arguments[0].dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true,cancelable:true}));", compare)
+              driver.execute_script("arguments[0].dispatchEvent(new PointerEvent('pointerup',{bubbles:true,cancelable:true,pointerId:1,pointerType:'mouse',isPrimary:true}));", compare)
+              wait.until(lambda d: 'Original source' not in d.find_element(By.CSS_SELECTOR, '.stage-corner-label').text)
               print('original comparison: ok')
 
               driver.set_window_size(390, 844); time.sleep(0.2)
