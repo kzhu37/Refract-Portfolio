@@ -35,3 +35,11 @@ jobs:
 
       - name: Build browser demo
         run: npm run build:web-demo
+
+      - name: Upload browser demo artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: refract-web-demo-dist
+          path: web-demo-dist
+          if-no-files-found: error
+          retention-days: 1
