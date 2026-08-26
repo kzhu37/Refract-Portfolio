@@ -38,7 +38,7 @@ The desktop application captures the display, models an approximate refractive b
 | **Technical centerpiece** | A gaze-aware, click-through WebGL2 overlay that processes a live desktop capture around the point of attention |
 | **Optics** | Prescription and physical calibration values become a rotated anisotropic Gaussian point spread function and correction kernel |
 | **Tracking** | MediaPipe iris landmarks, custom eye-relative features, polynomial calibration, validation, and Kalman smoothing |
-| **Project type** | Collaborative experimental engineering prototype, later refined and curated here as a technical portfolio |
+| **Project type** | Collaborative experimental engineering prototype, later refined and documented in this public repository |
 | **Current status** | Functional proof of concept with explicit limitations, not a clinical or medical system |
 
 <p align="center">
@@ -71,7 +71,7 @@ This makes Refract different from a conventional application UI. Its main engine
 
 ## My contribution and collaboration
 
-Refract was developed collaboratively, and I do not present the original technical foundation as solo work. The technical sections below describe the collaborative system as it exists. My individual contribution centered on product direction, user testing and interpretation, feedback-driven UX decisions, later interface and desktop engineering, and the final technical presentation of the project.
+Refract was developed collaboratively by Vlad Duckardt and me. My work centered on product direction, user testing and interpretation, feedback-driven UX decisions, later interface and desktop engineering, and documenting the finished system.
 
 | Area | My contribution |
 | --- | --- |
@@ -79,14 +79,14 @@ Refract was developed collaboratively, and I do not present the original technic
 | **Testing and iteration** | Helped organize testing, interpret recurring friction, and turn feedback about calibration, reversibility, before/after comparison, and correction strength into product changes |
 | **Interface engineering** | Completed a substantial later refactor across typography, spacing, responsive behavior, accessibility semantics, page structure, OD/OS help graphics, and Refract branding |
 | **Desktop polish** | Added the Refract app and tray icon system, icon-generation tooling, and Windows packaging support |
-| **Portfolio engineering** | Migrated and cleaned the working application for public presentation, added CI verification, documented active versus experimental techniques, and built the diagrams and technical narrative in this repository |
+| **Public repository and documentation** | Migrated and cleaned the working application for public release, added CI verification, documented active versus experimental techniques, and built the diagrams and technical walkthrough in this repository |
 
-Two source-history commits make the later engineering work directly inspectable:
+Two source-history commits show some of that later engineering work directly:
 
 - [`11e9c9c`](https://github.com/VDuckardtt/refract/commit/11e9c9ccb8aee09c7aac5ceb3ed13c75cf4eb80b): interface, responsive layout, accessibility, typography, help graphics, and branding refinement
 - [`0fa3a54`](https://github.com/VDuckardtt/refract/commit/0fa3a54b1e7a5d66fe540837c7b16addb130a860): application and tray icons, icon-generation tooling, and Windows packaging support
 
-The original development history is preserved in the [collaborative source repository](https://github.com/VDuckardtt/refract). This repository is my curated showcase of the working project and its engineering story.
+The earlier development history remains in the [collaborative source repository](https://github.com/VDuckardtt/refract). I created this repository later as a cleaned-up public version of the working project with its browser demo, documentation, and continued refinements.
 
 ## System architecture
 
@@ -195,7 +195,7 @@ W(u,v) = H*(u,v) / (|H(u,v)|^2 + NSR)
 
 and transforms the result back into a spatial correction kernel.
 
-This module is an engineering experiment, **not the default live path**. Refract also explored higher-order aberration models during research, including Zernike representations, but the current PSF implementation remains Gaussian. The portfolio keeps explored techniques, experimental code, and active runtime behavior separate so the technical claims remain precise.
+This module is an engineering experiment, **not the default live path**. Refract also explored higher-order aberration models during research, including Zernike representations, but the current PSF implementation remains Gaussian. I keep explored techniques, experimental code, and active runtime behavior separate in the documentation so it is clear which ideas are actually part of the live correction path.
 
 ## Experimental vision workflow
 
@@ -244,9 +244,9 @@ Refract went through exploratory user testing followed by additional feedback. T
 | Stronger correction could feel harsh or slightly disorienting | Default strength was reduced and comfort became part of the definition of functionality |
 | Results varied with the testing environment | Viewing distance, brightness, room lighting, camera position, and physical screen dimensions became explicit engineering variables |
 
-One glasses-wearing tester described the effect as promising while also making clear that it did not feel equivalent to glasses. That distinction was valuable. It pushed the project away from treating technical sophistication as proof of effectiveness and toward clearer limits, better setup, and more honest success criteria.
+One glasses-wearing tester described the effect as promising while also making clear that it did not feel equivalent to glasses. That distinction was valuable. It pushed the project away from treating technical sophistication as the same thing as effectiveness and toward clearer limits, better setup, and more useful success criteria.
 
-The testing was exploratory and subjective. It was not controlled clinical validation, retention telemetry, or evidence that Refract can replace corrective lenses.
+The testing was exploratory and subjective. It was not controlled clinical validation and cannot establish that Refract can replace corrective lenses.
 
 ## Engineering challenges and decisions
 
@@ -284,7 +284,7 @@ The testing was exploratory and subjective. It was not controlled clinical valid
 
 ## Prototype scope and current limitations
 
-Refract is intentionally presented as a proof of concept, including the boundaries that still separate it from a validated vision product:
+Refract is a proof of concept, with several boundaries that still separate it from a validated vision product:
 
 - the live correction model uses an anisotropic Gaussian PSF, not a clinically calibrated wavefront model
 - the experimental Wiener module exists separately, while the active route uses normalized unsharp correction
@@ -294,7 +294,7 @@ Refract is intentionally presented as a proof of concept, including the boundari
 - MediaPipe runtime assets are currently loaded from a CDN
 - user testing was exploratory and was not performed under controlled clinical conditions
 
-These limitations are part of the engineering record. They define where a compelling prototype ends and where much more rigorous validation would have to begin.
+These limitations define where the current prototype ends and where much more rigorous validation would have to begin.
 
 ## What I learned
 
@@ -340,7 +340,7 @@ npm ci
 npm run dev
 ```
 
-For the isolated browser portfolio target:
+For the isolated browser demo target:
 
 ```bash
 npm run dev:web-demo
@@ -394,8 +394,8 @@ src/
     lib/optics/          Prescription model, PSF, Wiener experiments
     lib/store/           Renderer state
     pages/               Main application screens
-web-demo/                Browser-scoped interactive portfolio target
-docs/media/              Portfolio screenshots and diagrams
+web-demo/                Interactive browser demo
+docs/media/              Screenshots and diagrams
 resources/icons/         App and tray branding
 scripts/                 Icon-generation tooling
 vite.web-demo.config.ts  Isolated Vite build configuration for the browser demo
@@ -412,6 +412,6 @@ The strongest next work is validation, not adding more controls:
 
 ## Credits
 
-Refract was developed collaboratively by Vlad Duckardt and Kevin Zhu. The original development history remains available in [`VDuckardtt/refract`](https://github.com/VDuckardtt/refract), while this repository is Kevin Zhu's curated portfolio presentation of the project.
+Refract was developed collaboratively by Vlad Duckardt and Kevin Zhu. The original development history remains available in [`VDuckardtt/refract`](https://github.com/VDuckardtt/refract); this repository is my public version of the project, including later refinements, documentation, and the browser demo.
 
 The project's difficulty came from making several systems operate together: refractive parameters had to become a usable correction model, webcam landmarks had to become stable screen coordinates, those coordinates had to drive a localized GPU correction over a continuously captured desktop, and the entire loop had to remain responsive, reversible, and understandable enough for people to test.
