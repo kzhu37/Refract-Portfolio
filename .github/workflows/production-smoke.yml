@@ -53,7 +53,6 @@ jobs:
           from selenium.common.exceptions import TimeoutException
           from selenium.webdriver.common.action_chains import ActionChains
           from selenium.webdriver.common.by import By
-          from selenium.webdriver.common.keys import Keys
           from selenium.webdriver.support.ui import WebDriverWait
           from selenium.webdriver.support import expected_conditions as EC
 
@@ -135,9 +134,9 @@ jobs:
               print('reset: ok')
 
               compare = driver.find_element(By.XPATH, "//button[contains(., 'Hold for original')]")
-              ActionChains(driver).key_down(Keys.SPACE, compare).perform()
+              driver.execute_script("arguments[0].focus(); arguments[0].dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true,cancelable:true}));", compare)
               wait.until(lambda d: 'Original source' in d.find_element(By.CSS_SELECTOR, '.stage-corner-label').text)
-              ActionChains(driver).key_up(Keys.SPACE, compare).perform()
+              driver.execute_script("arguments[0].dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true,cancelable:true}));", compare)
               print('original comparison: ok')
 
               driver.set_window_size(390, 844); time.sleep(0.2)
