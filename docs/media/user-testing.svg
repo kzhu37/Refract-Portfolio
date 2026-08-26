@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">Refract feedback-driven iteration</title>
+  <desc id="desc">A diagram showing how exploratory user feedback changed calibration language, before and after comparison, reversibility, correction comfort, and attention to physical testing conditions.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070B1E"/>
+      <stop offset="1" stop-color="#10183B"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7B5CF0"/>
+      <stop offset="1" stop-color="#4B8AF0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="650" rx="28" fill="url(#bg)"/>
+  <text x="70" y="76" fill="#FFFFFF" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="34" font-weight="700">Testing changed the product</text>
+  <text x="70" y="110" fill="#8BADC8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17">Exploratory feedback became concrete design decisions</text>
+
+  <g font-family="Inter,Segoe UI,Arial,sans-serif">
+    <rect x="70" y="160" width="245" height="205" rx="18" fill="#0F1635" stroke="#4B8AF0" stroke-opacity="0.42"/>
+    <text x="94" y="196" fill="#7FAEFF" font-size="13" font-weight="700" letter-spacing="1.1">CALIBRATION</text>
+    <text x="94" y="236" fill="#FFFFFF" font-size="18" font-weight="650">Technical wording</text>
+    <text x="94" y="261" fill="#FFFFFF" font-size="18" font-weight="650">caused confusion.</text>
+    <text x="94" y="307" fill="#8BADC8" font-size="15">Rewrite setup in plain,</text>
+    <text x="94" y="331" fill="#8BADC8" font-size="15">guided language.</text>
+
+    <rect x="340" y="160" width="245" height="205" rx="18" fill="#0F1635" stroke="#7B5CF0" stroke-opacity="0.42"/>
+    <text x="364" y="196" fill="#A493FF" font-size="13" font-weight="700" letter-spacing="1.1">BEFORE / AFTER</text>
+    <text x="364" y="236" fill="#FFFFFF" font-size="18" font-weight="650">The idea felt abstract</text>
+    <text x="364" y="261" fill="#FFFFFF" font-size="18" font-weight="650">until users toggled it.</text>
+    <text x="364" y="307" fill="#8BADC8" font-size="15">Move comparison earlier</text>
+    <text x="364" y="331" fill="#8BADC8" font-size="15">in the experience.</text>
+
+    <rect x="610" y="160" width="245" height="205" rx="18" fill="#0F1635" stroke="#2DD4BF" stroke-opacity="0.42"/>
+    <text x="634" y="196" fill="#5EEAD4" font-size="13" font-weight="700" letter-spacing="1.1">REVERSIBILITY</text>
+    <text x="634" y="236" fill="#FFFFFF" font-size="18" font-weight="650">Users worried about a</text>
+    <text x="634" y="261" fill="#FFFFFF" font-size="18" font-weight="650">bad adjustment.</text>
+    <text x="634" y="307" fill="#8BADC8" font-size="15">Make reset and recovery</text>
+    <text x="634" y="331" fill="#8BADC8" font-size="15">more visible.</text>
+
+    <rect x="880" y="160" width="250" height="205" rx="18" fill="#0F1635" stroke="#FBBF24" stroke-opacity="0.42"/>
+    <text x="904" y="196" fill="#FCD34D" font-size="13" font-weight="700" letter-spacing="1.1">COMFORT</text>
+    <text x="904" y="236" fill="#FFFFFF" font-size="18" font-weight="650">Strong correction could</text>
+    <text x="904" y="261" fill="#FFFFFF" font-size="18" font-weight="650">feel harsh.</text>
+    <text x="904" y="307" fill="#8BADC8" font-size="15">Reduce default strength</text>
+    <text x="904" y="331" fill="#8BADC8" font-size="15">and prioritize comfort.</text>
+
+    <rect x="70" y="405" width="1060" height="145" rx="18" fill="#0C1230" stroke="url(#accent)" stroke-opacity="0.58"/>
+    <text x="98" y="444" fill="#A493FF" font-size="14" font-weight="700" letter-spacing="1.1">PHYSICAL CONDITIONS BECAME PART OF THE ENGINEERING MODEL</text>
+    <text x="98" y="485" fill="#FFFFFF" font-size="18" font-weight="600">Testing conditions changed what users experienced.</text>
+    <text x="98" y="516" fill="#8BADC8" font-size="15">Viewing distance, screen scale, brightness, room lighting, and camera position were treated as variables to control rather than assumptions to ignore.</text>
+  </g>
+
+  <text x="70" y="606" fill="#4E6B8F" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13">Exploratory user feedback only. This graphic does not represent clinical validation, retention telemetry, or medical efficacy.</text>
+</svg>

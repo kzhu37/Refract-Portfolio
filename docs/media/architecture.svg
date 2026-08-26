@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">Refract system architecture</title>
+  <desc id="desc">A diagram showing prescription and calibration data feeding an optical model, Electron IPC, gaze tracking, desktop capture, a WebGL2 shader, and a transparent desktop overlay.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070B1E"/>
+      <stop offset="1" stop-color="#10183B"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7B5CF0"/>
+      <stop offset="1" stop-color="#4B8AF0"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#6D8CF5"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="700" rx="28" fill="url(#bg)"/>
+  <circle cx="1020" cy="90" r="180" fill="#5A6BF0" opacity="0.08"/>
+  <circle cx="160" cy="620" r="220" fill="#7B5CF0" opacity="0.06"/>
+
+  <text x="70" y="78" fill="#FFFFFF" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="34" font-weight="700">How Refract works</text>
+  <text x="70" y="112" fill="#8BADC8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17">Current desktop architecture, from user inputs to GPU-rendered overlay</text>
+
+  <g font-family="Inter,Segoe UI,Arial,sans-serif">
+    <rect x="70" y="180" width="270" height="120" rx="18" fill="#0F1635" stroke="#4B8AF0" stroke-opacity="0.35"/>
+    <text x="95" y="216" fill="#7FAEFF" font-size="14" font-weight="700" letter-spacing="1.2">INPUT</text>
+    <text x="95" y="250" fill="#FFFFFF" font-size="22" font-weight="650">Prescription + calibration</text>
+    <text x="95" y="278" fill="#8BADC8" font-size="15">SPH, CYL, axis, distance, screen scale</text>
+
+    <rect x="465" y="160" width="270" height="160" rx="18" fill="#0F1635" stroke="#7B5CF0" stroke-opacity="0.38"/>
+    <text x="490" y="196" fill="#A493FF" font-size="14" font-weight="700" letter-spacing="1.2">OPTICAL MODEL</text>
+    <text x="490" y="231" fill="#FFFFFF" font-size="22" font-weight="650">PSF + correction kernel</text>
+    <text x="490" y="260" fill="#8BADC8" font-size="15">Rotated anisotropic Gaussian PSF</text>
+    <text x="490" y="284" fill="#8BADC8" font-size="15">Current path: unsharp correction</text>
+
+    <rect x="860" y="180" width="270" height="120" rx="18" fill="#0F1635" stroke="#4B8AF0" stroke-opacity="0.35"/>
+    <text x="885" y="216" fill="#7FAEFF" font-size="14" font-weight="700" letter-spacing="1.2">STATE + IPC</text>
+    <text x="885" y="250" fill="#FFFFFF" font-size="22" font-weight="650">Electron main process</text>
+    <text x="885" y="278" fill="#8BADC8" font-size="15">Coordinates renderer and overlay state</text>
+
+    <rect x="70" y="410" width="270" height="140" rx="18" fill="#0F1635" stroke="#2DD4BF" stroke-opacity="0.35"/>
+    <text x="95" y="446" fill="#5EEAD4" font-size="14" font-weight="700" letter-spacing="1.2">ATTENTION</text>
+    <text x="95" y="480" fill="#FFFFFF" font-size="22" font-weight="650">Gaze or cursor tracking</text>
+    <text x="95" y="509" fill="#8BADC8" font-size="15">MediaPipe iris landmarks</text>
+    <text x="95" y="533" fill="#8BADC8" font-size="15">Calibration, regression, smoothing</text>
+
+    <rect x="465" y="410" width="270" height="140" rx="18" fill="#0F1635" stroke="#FBBF24" stroke-opacity="0.35"/>
+    <text x="490" y="446" fill="#FCD34D" font-size="14" font-weight="700" letter-spacing="1.2">LIVE FRAME</text>
+    <text x="490" y="480" fill="#FFFFFF" font-size="22" font-weight="650">Desktop capture</text>
+    <text x="490" y="509" fill="#8BADC8" font-size="15">Screen stream uploaded to a GPU texture</text>
+    <text x="490" y="533" fill="#8BADC8" font-size="15">Overlay is excluded from recapture</text>
+
+    <rect x="860" y="390" width="270" height="180" rx="18" fill="#0F1635" stroke="url(#accent)" stroke-width="1.5" filter="url(#glow)"/>
+    <text x="885" y="426" fill="#A493FF" font-size="14" font-weight="700" letter-spacing="1.2">OUTPUT</text>
+    <text x="885" y="462" fill="#FFFFFF" font-size="22" font-weight="650">WebGL2 correction shader</text>
+    <text x="885" y="491" fill="#8BADC8" font-size="15">Localized convolution around gaze</text>
+    <text x="885" y="515" fill="#8BADC8" font-size="15">Smooth fade, luma-focused processing</text>
+    <text x="885" y="539" fill="#8BADC8" font-size="15">Transparent click-through overlay</text>
+
+    <path d="M340 240 C390 240 405 240 455 240" fill="none" stroke="#6D8CF5" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <path d="M735 240 C785 240 800 240 850 240" fill="none" stroke="#6D8CF5" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <path d="M995 300 C995 330 995 350 995 380" fill="none" stroke="#6D8CF5" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <path d="M340 480 C520 365 745 360 850 438" fill="none" stroke="#3CCDB7" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <path d="M735 480 C780 480 810 480 850 480" fill="none" stroke="#E8B948" stroke-width="2.5" marker-end="url(#arrow)"/>
+  </g>
+
+  <text x="70" y="640" fill="#4E6B8F" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14">The application keeps the overlay alive for low-latency toggling and uses Electron content protection to prevent recursive screen-capture feedback.</text>
+</svg>

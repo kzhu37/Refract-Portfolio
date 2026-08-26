@@ -1,0 +1,16 @@
+{
+  "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
+  "include": [
+    "web-demo/**/*",
+    "src/overlay/lib/webgl/**/*",
+    "src/renderer/lib/eyetracking/gaze-smoother.ts",
+    "src/renderer/lib/eyetracking/iris-gaze.ts",
+    "src/renderer/lib/optics/**/*",
+    "src/renderer/lib/types/electron-api.d.ts",
+    "src/renderer/lib/types/prescription.ts"
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "baseUrl": "."
+  }
+}

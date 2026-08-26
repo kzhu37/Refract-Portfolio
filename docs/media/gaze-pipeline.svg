@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="610" viewBox="0 0 1200 610" role="img" aria-labelledby="title desc">
+  <title id="title">Refract gaze tracking pipeline</title>
+  <desc id="desc">A diagram showing webcam input, MediaPipe iris landmarks, normalized iris features, nine point calibration, polynomial mapping, Kalman smoothing, and the final screen gaze point.</desc>
+  <defs>
+    <linearGradient id="bg4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070B1E"/>
+      <stop offset="1" stop-color="#10183B"/>
+    </linearGradient>
+    <marker id="arrow4" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#6D8CF5"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="610" rx="28" fill="url(#bg4)"/>
+  <text x="70" y="78" fill="#FFFFFF" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="34" font-weight="700">Turning iris motion into a screen coordinate</text>
+  <text x="70" y="112" fill="#8BADC8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17">The tracker adds calibration, regression, and smoothing on top of MediaPipe landmarks</text>
+
+  <g font-family="Inter,Segoe UI,Arial,sans-serif">
+    <rect x="60" y="200" width="150" height="190" rx="18" fill="#0F1635" stroke="#2DD4BF" stroke-opacity="0.35"/>
+    <circle cx="135" cy="267" r="34" fill="#2DD4BF" opacity="0.12"/>
+    <circle cx="135" cy="267" r="12" fill="none" stroke="#5EEAD4" stroke-width="3"/>
+    <text x="135" y="335" fill="#FFFFFF" font-size="18" font-weight="650" text-anchor="middle">Webcam</text>
+    <text x="135" y="361" fill="#8BADC8" font-size="13" text-anchor="middle">video frames</text>
+
+    <rect x="250" y="200" width="180" height="190" rx="18" fill="#0F1635" stroke="#4B8AF0" stroke-opacity="0.35"/>
+    <ellipse cx="340" cy="266" rx="50" ry="24" fill="none" stroke="#7FAEFF" stroke-width="2"/>
+    <circle cx="340" cy="266" r="8" fill="#7FAEFF"/>
+    <circle cx="305" cy="266" r="4" fill="#A493FF"/>
+    <circle cx="375" cy="266" r="4" fill="#A493FF"/>
+    <text x="340" y="335" fill="#FFFFFF" font-size="18" font-weight="650" text-anchor="middle">MediaPipe</text>
+    <text x="340" y="361" fill="#8BADC8" font-size="13" text-anchor="middle">iris + eye corners</text>
+
+    <rect x="470" y="200" width="190" height="190" rx="18" fill="#0F1635" stroke="#7B5CF0" stroke-opacity="0.35"/>
+    <text x="565" y="248" fill="#A493FF" font-size="13" font-weight="700" text-anchor="middle">NORMALIZED FEATURE</text>
+    <text x="565" y="292" fill="#FFFFFF" font-size="18" font-weight="650" text-anchor="middle">Iris offset</text>
+    <line x1="520" y1="320" x2="610" y2="320" stroke="#4E6B8F" stroke-width="2"/>
+    <text x="565" y="346" fill="#8BADC8" font-size="13" text-anchor="middle">eye width</text>
+    <text x="565" y="371" fill="#8BADC8" font-size="12" text-anchor="middle">reduces head translation effects</text>
+
+    <rect x="700" y="200" width="190" height="190" rx="18" fill="#0F1635" stroke="#4B8AF0" stroke-opacity="0.35"/>
+    <g fill="#7FAEFF">
+      <circle cx="743" cy="247" r="5"/><circle cx="795" cy="247" r="5"/><circle cx="847" cy="247" r="5"/>
+      <circle cx="743" cy="294" r="5"/><circle cx="795" cy="294" r="5"/><circle cx="847" cy="294" r="5"/>
+      <circle cx="743" cy="341" r="5"/><circle cx="795" cy="341" r="5"/><circle cx="847" cy="341" r="5"/>
+    </g>
+    <text x="795" y="374" fill="#FFFFFF" font-size="18" font-weight="650" text-anchor="middle">9-point calibration</text>
+
+    <rect x="930" y="180" width="210" height="230" rx="18" fill="#0F1635" stroke="#7B5CF0" stroke-opacity="0.42"/>
+    <text x="1035" y="224" fill="#A493FF" font-size="13" font-weight="700" text-anchor="middle">SCREEN MAPPING</text>
+    <text x="1035" y="266" fill="#FFFFFF" font-size="18" font-weight="650" text-anchor="middle">Degree-2 polynomial</text>
+    <text x="1035" y="296" fill="#8BADC8" font-size="13" text-anchor="middle">least-squares fit</text>
+    <text x="1035" y="330" fill="#FFFFFF" font-size="18" font-weight="650" text-anchor="middle">Kalman smoothing</text>
+    <text x="1035" y="360" fill="#8BADC8" font-size="13" text-anchor="middle">stable gaze coordinate</text>
+
+    <path d="M210 295 L240 295" fill="none" stroke="#6D8CF5" stroke-width="2.4" marker-end="url(#arrow4)"/>
+    <path d="M430 295 L460 295" fill="none" stroke="#6D8CF5" stroke-width="2.4" marker-end="url(#arrow4)"/>
+    <path d="M660 295 L690 295" fill="none" stroke="#6D8CF5" stroke-width="2.4" marker-end="url(#arrow4)"/>
+    <path d="M890 295 L920 295" fill="none" stroke="#6D8CF5" stroke-width="2.4" marker-end="url(#arrow4)"/>
+  </g>
+
+  <rect x="215" y="465" width="770" height="75" rx="16" fill="#0C1230" stroke="#304877"/>
+  <text x="600" y="495" fill="#FFFFFF" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16" font-weight="650" text-anchor="middle">Calibration samples use a median of recent frames to reduce blink and micro-saccade noise.</text>
+  <text x="600" y="520" fill="#8BADC8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" text-anchor="middle">Four validation targets then estimate mean pixel error before the correction region follows gaze.</text>
+</svg>

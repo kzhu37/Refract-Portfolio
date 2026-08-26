@@ -1,0 +1,15 @@
+node_modules
+dist
+out
+dist-electron
+web-demo-dist
+
+.env
+.env.*
+!.env.example
+
+*.tsbuildinfo
+
+.staging/
+.tmp/
+.vercel/

@@ -1,0 +1,59 @@
+/* Range-input pseudo-element styles - cannot be expressed with Tailwind utilities */
+
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  /* dynamic track-fill gradient is set via the `style` prop on the element */
+}
+
+/* Chrome/Edge/Safari -------------------------------------------------- */
+.slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;           /* white thumb - no token */
+  margin-top: -8px;              /* (20px thumb - 4px track) / 2 */
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  transition: box-shadow 0.15s ease;
+}
+
+.slider:hover::-webkit-slider-thumb,
+.slider:focus::-webkit-slider-thumb {
+  /* glow-focus ring around thumb on interaction */
+  box-shadow: 0 0 0 5px rgba(75, 138, 240, 0.22), 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+/* Firefox ------------------------------------------------------------- */
+.slider::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: #162045;           /* bg-overlay */
+}
+
+.slider::-moz-range-progress {
+  height: 4px;
+  border-radius: 9999px;
+  background: #4b8af0;           /* color-blue */
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
