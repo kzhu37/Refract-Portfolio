@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   smoke:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
       DEMO_URL: https://refract-portfolio-xiangseanzhu-7370.vercel.app
