@@ -10,6 +10,14 @@
   Electron · React · TypeScript · WebGL2 · GLSL · MediaPipe · Zustand
 </p>
 
+<p align="center">
+  <a href="https://refract-portfolio-xiangseanzhu-7370.vercel.app"><strong>Try Browser Demo →</strong></a>
+</p>
+
+> **Browser demo note:** The live Refract demo is a browser-scoped adaptation of the desktop prototype. It reuses the project's browser-compatible optics, gaze-tracking, and real-time WebGL correction code on content rendered within the demo page, with browser-appropriate physical-model controls and a 96-DPI fallback. Unlike the full Electron application, it cannot capture arbitrary desktop content or place Refract's transparent correction overlay above other applications, so correction is intentionally limited to the demonstration environment.
+>
+> Optional camera gaze is a streamlined browser mode; the desktop prototype retains the full 3 × 3 gaze calibration, physical screen calibration, desktop capture, and transparent system-level overlay.
+
 Refract explores a simple question: **what if the screen could adapt to the user's vision instead of making the user adapt to the screen?**
 
 The desktop application captures the display, models an approximate refractive blur from prescription and calibration parameters, tracks the user's gaze or cursor, and applies localized GPU-accelerated correction around the point of attention. The result is a working engineering prototype where optics, computer vision, numerical calibration, desktop systems, physical setup, and human comfort all have to operate in one loop.
@@ -332,14 +340,21 @@ npm ci
 npm run dev
 ```
 
+For the isolated browser portfolio target:
+
+```bash
+npm run dev:web-demo
+```
+
 ### Verification
 
 ```bash
 npm run typecheck
 npm run build
+npm run build:web-demo
 ```
 
-The repository includes GitHub Actions CI that installs dependencies, runs the TypeScript checks, and builds the application on pushes and pull requests.
+The repository includes GitHub Actions CI that installs dependencies, runs the TypeScript checks, builds the Electron application, and builds the browser demo on pushes and pull requests.
 
 ### Platform packages
 
@@ -379,9 +394,11 @@ src/
     lib/optics/          Prescription model, PSF, Wiener experiments
     lib/store/           Renderer state
     pages/               Main application screens
+web-demo/                Browser-scoped interactive portfolio target
 docs/media/              Portfolio screenshots and diagrams
 resources/icons/         App and tray branding
 scripts/                 Icon-generation tooling
+vite.web-demo.config.ts  Isolated Vite build configuration for the browser demo
 ```
 
 ## Next steps
