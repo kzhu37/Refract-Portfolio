@@ -126,6 +126,12 @@ export class CorrectionRenderer {
     if (loc) this.gl.uniform1i(loc, enabled ? 1 : 0);
   }
 
+  /**
+   * Legacy compatibility hook for older callers. Magnification is intentionally
+   * not part of the correction shader, so this method has no visual effect.
+   */
+  setZoom(_zoom: number): void {}
+
   setFovealParams(fovealRadius: number, blendRadius: number): void {
     const { gl } = this;
     const fovLoc = this.uniformLocations.get('u_fovealRadius');
