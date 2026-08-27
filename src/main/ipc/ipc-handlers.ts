@@ -16,6 +16,8 @@ import type { FullPrescription, GazePoint, OverlayState } from '../../renderer/l
 // is currently rendering. Updated incrementally by each handler.
 // ---------------------------------------------------------------------------
 
+const initialSettings = getSettings()
+
 let currentOverlayState: OverlayState = {
   enabled: false,
   mode: 'none',
@@ -23,8 +25,9 @@ let currentOverlayState: OverlayState = {
   gazePoint: null,
   kernelOD: null,
   kernelOS: null,
-  fovealRadius: getSettings().fovealRadius,
-  tracking: getSettings().trackingMode
+  activeEye: initialSettings.activeEye,
+  fovealRadius: initialSettings.fovealRadius,
+  tracking: initialSettings.trackingMode
 }
 
 function pushOverlayState(overlayWindow: OverlayWindow): void {
@@ -34,13 +37,12 @@ function pushOverlayState(overlayWindow: OverlayWindow): void {
 // ---------------------------------------------------------------------------
 // Cursor-follow mode
 // ---------------------------------------------------------------------------
-// When tracking === 'cursor' there's no webcam gaze stream, so the main process
-// becomes the source of the bubble position: it polls the OS cursor location
-// (which works system-wide, even though the overlay window is click-through)
-// and feeds it as the gazePoint. getCursorScreenPoint() returns absolute screen
-// coordinates - the same space gazePoint is documented to use.
+// When tracking === 'cursor' there is no webcam gaze stream, so the main process
+// becomes the source of the bubble position. It polls the OS cursor location
+// system-wide and feeds it as gazePoint. getCursorScreenPoint() returns absolute
+// screen coordinates, the same space gazePoint is documented to use.
 
-const CURSOR_POLL_MS = 16 // ~60 Hz, matches the overlay's render cadence
+const CURSOR_POLL_MS = 16 // ~60 Hz, matches the overlay render cadence
 let cursorPollTimer: NodeJS.Timeout | null = null
 
 function startCursorPolling(overlayWindow: OverlayWindow): void {
@@ -61,7 +63,6 @@ function stopCursorPolling(): void {
   cursorPollTimer = null
 }
 
-// Run the cursor poller only while the overlay is active AND in cursor mode.
 function syncCursorTracking(overlayWindow: OverlayWindow): void {
   const wantCursor = currentOverlayState.enabled && currentOverlayState.tracking === 'cursor'
   if (wantCursor) startCursorPolling(overlayWindow)
@@ -112,29 +113,23 @@ export function setupIpcHandlers(mainWindow: MainWindow, overlayWindow: OverlayW
     toggleOverlayState(overlayWindow, mainWindow, show)
   })
 
-  // Full overlay state push from renderer (after kernel recomputation) ---------
-  // Renderer owns kernel computation; main merges the result and forwards it.
+  // Full overlay state push from renderer after kernel or control changes.
   ipcMain.on(IPC.OVERLAY_STATE_PUSH, (_event, state: OverlayState) => {
     currentOverlayState = { ...currentOverlayState, ...state }
     pushOverlayState(overlayWindow)
-    // The push may have changed enabled / tracking - re-evaluate the poller.
     syncCursorTracking(overlayWindow)
   })
 
-  // Gaze relay - renderer sends webcam gaze output, main forwards to overlay ---
-  // Ignored in cursor mode: there the main-process poller owns the gazePoint and
-  // a stray late webcam frame would otherwise fight it.
+  // Gaze relay. In cursor mode the main-process poller owns gazePoint.
   ipcMain.on(IPC.GAZE_UPDATE, (_event, gaze: GazePoint) => {
     if (currentOverlayState.tracking === 'cursor') return
     currentOverlayState = { ...currentOverlayState, gazePoint: gaze }
     pushOverlayState(overlayWindow)
   })
 
-  // Viewing distance - renderer detects via MediaPipe face mesh ---------------
+  // Viewing distance ----------------------------------------------------------
   ipcMain.on(IPC.DISTANCE_UPDATE, (_event, distanceCm: number) => {
-    // Persist for kernel recomputation (Phase 2).
     setCalibration({ viewingDistanceCm: distanceCm })
-    // Forward to overlay so it can independently scale foveal radius.
     overlayWindow.getWindow()?.webContents.send(IPC.DISTANCE_UPDATE, distanceCm)
   })
 
@@ -142,24 +137,21 @@ export function setupIpcHandlers(mainWindow: MainWindow, overlayWindow: OverlayW
   ipcMain.handle(IPC.WINDOW_SHOW_MAIN, () => mainWindow.show())
   ipcMain.handle(IPC.WINDOW_HIDE_MAIN, () => mainWindow.hide())
 
-  // Screen capture source - overlay requests the primary display's id and ----
-  // feeds it to getUserMedia({ chromeMediaSourceId }) for live capture.
+  // Screen capture source -----------------------------------------------------
   ipcMain.handle(IPC.SCREEN_SOURCE_ID_GET, async () => {
     const sources = await desktopCapturer.getSources({
       types: ['screen'],
-      thumbnailSize: { width: 0, height: 0 }  // Skip thumbnails for speed.
+      thumbnailSize: { width: 0, height: 0 }
     })
-    return sources[0].id  // Primary display source.
+    return sources[0].id
   })
 
-  // Calibration overlay - temporarily allow overlay window to receive clicks --
-  // setIgnoreMouseEvents(false) lets the overlay respond to pointer events;
-  // { forward: true } ensures pointer moves are still forwarded when re-enabled.
+  // Calibration overlay -------------------------------------------------------
   ipcMain.on(IPC.OVERLAY_INTERACTIVE, (_event, interactive: boolean) => {
     overlayWindow.getWindow()?.setIgnoreMouseEvents(!interactive, { forward: true })
   })
 
-  // Validation export - save results JSON via native save dialog -------------
+  // Validation export ---------------------------------------------------------
   ipcMain.handle(IPC.VALIDATION_EXPORT, async (_event, data: unknown) => {
     const win = mainWindow.getWindow()
     const opts = {
@@ -175,7 +167,7 @@ export function setupIpcHandlers(mainWindow: MainWindow, overlayWindow: OverlayW
     return filePath
   })
 
-  // Display info - physical pixel dimensions and HiDPI scale factor ----------
+  // Display info --------------------------------------------------------------
   ipcMain.handle(IPC.DISPLAY_INFO, () => {
     const display = screen.getPrimaryDisplay()
     return {
