@@ -14,6 +14,8 @@ export interface PSFOptions {
 
 export interface CorrectionOptions {
   method: 'unsharp'
+  /** Backward-compatible input. Runtime strength is applied by the shader. */
+  strength?: number
 }
 
 // ---------------------------------------------------------------------------
