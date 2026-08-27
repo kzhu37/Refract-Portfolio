@@ -65,7 +65,7 @@
     <path d="M340 240 C390 240 405 240 455 240" fill="none" stroke="#6D8CF5" stroke-width="2.5" marker-end="url(#arrow)"/>
     <path d="M735 240 C785 240 800 240 850 240" fill="none" stroke="#6D8CF5" stroke-width="2.5" marker-end="url(#arrow)"/>
     <path d="M995 300 C995 330 995 350 995 380" fill="none" stroke="#6D8CF5" stroke-width="2.5" marker-end="url(#arrow)"/>
-    <path d="M340 480 C520 365 745 360 850 438" fill="none" stroke="#3CCDB7" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <path d="M340 480 C390 445 420 395 455 378 C585 335 745 345 850 438" fill="none" stroke="#3CCDB7" stroke-width="2.5" marker-end="url(#arrow)"/>
     <path d="M735 480 C780 480 810 480 850 480" fill="none" stroke="#E8B948" stroke-width="2.5" marker-end="url(#arrow)"/>
   </g>
 
