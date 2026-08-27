@@ -16,7 +16,7 @@ interface StoreSchema {
     eyeTrackingEnabled: boolean
     trackingMode: TrackingMode
     launchAtStartup: boolean
-    activeEye: EyeSide | 'both'
+    activeEye: EyeSide
   }
   calibrationData: {
     pixelsPerMm: number
@@ -35,7 +35,7 @@ const defaults: StoreSchema = {
     eyeTrackingEnabled: true,
     trackingMode: 'eye',
     launchAtStartup: false,
-    activeEye: 'both'
+    activeEye: 'OD'
   },
   calibrationData: {
     pixelsPerMm: 3.78, // ~96 DPI default
@@ -63,7 +63,11 @@ export function setPrescription(rx: FullPrescription): void {
 }
 
 export function getSettings(): StoreSchema['settings'] {
-  return store.get('settings')
+  const settings = store.get('settings')
+  // Older prototype builds persisted "both". The current screen-level renderer
+  // applies one optical profile at a time, so migrate any legacy value to OD.
+  const activeEye: EyeSide = settings.activeEye === 'OS' ? 'OS' : 'OD'
+  return { ...settings, activeEye }
 }
 
 export function setSetting<K extends keyof StoreSchema['settings']>(
@@ -89,7 +93,7 @@ export function setCalibration(data: Partial<StoreSchema['calibrationData']>): v
 export function setLaunchAtStartup(enabled: boolean): void {
   app.setLoginItemSettings({
     openAtLogin: enabled,
-    openAsHidden: true, // don't show main window on auto-launch
+    openAsHidden: true,
     path: process.execPath
   })
   setSetting('launchAtStartup', enabled)
