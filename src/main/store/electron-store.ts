@@ -32,8 +32,8 @@ const defaults: StoreSchema = {
     fovealRadius: 100,
     kernelMethod: 'unsharp',
     captureResolutionScale: 0.75,
-    eyeTrackingEnabled: true,
-    trackingMode: 'eye',
+    eyeTrackingEnabled: false,
+    trackingMode: 'cursor',
     launchAtStartup: false,
     activeEye: 'OD'
   },
