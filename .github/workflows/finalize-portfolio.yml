@@ -1,4 +1,5 @@
 name: Finalize Refract Portfolio
+# This second push triggers the workflow after initial registration.
 
 on:
   push:
