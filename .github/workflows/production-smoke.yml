@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
-      DEMO_URL: https://refract-portfolio-xiangseanzhu-7370.vercel.app
+      DEMO_URL: https://refract-portfolio.vercel.app
 
     steps:
       - name: Check out repository
