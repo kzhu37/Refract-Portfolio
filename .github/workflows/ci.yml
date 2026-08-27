@@ -112,8 +112,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -142,12 +140,11 @@ jobs:
           kill "$SERVER_PID" || true
           test -s docs/media/refract-correction-demo.gif
 
-      - name: Commit finished visual and restore clean CI
+      - name: Commit finished visual
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git show HEAD^:.github/workflows/ci.yml > .github/workflows/ci.yml
           git rm scripts/capture-portfolio-demo.py
-          git add docs/media/refract-correction-demo.gif .github/workflows/ci.yml
+          git add docs/media/refract-correction-demo.gif
           git commit -m "Add authentic Refract correction motion proof [skip ci]"
           git push origin HEAD:main
