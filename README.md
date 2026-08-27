@@ -25,6 +25,14 @@ The full Electron prototype captures desktop content, builds an approximate refr
 > [!IMPORTANT]
 > **Refract is an experimental research and engineering prototype.** It is not a medical device, clinical diagnostic tool, prescription estimator, or replacement for glasses, contact lenses, professional eye examinations, or other vision care. The guided workflow produces heuristic prototype inputs only.
 
+<p align="center">
+  <img src="docs/media/refract-correction-demo.gif" alt="Refract browser demo showing the real localized WebGL2 correction region moving across detailed content and switching to a directional prescription preset" width="94%">
+</p>
+<p align="center"><sub><strong>Live renderer evidence:</strong> captured from the real browser build. The pointer moves the localized correction region, the demo switches to a directional prescription, and the original source is briefly revealed for comparison.</sub></p>
+
+> [!NOTE]
+> **Collaborative project:** Refract's core prototype was developed with Vlad Duckardt. My later work focused on product evaluation and feedback-driven iteration, interface and usability refinement, desktop productization, the public browser adaptation, technical documentation, and automated verification. The original source history and specific contribution record are preserved in [Contribution and collaboration](#contribution-and-collaboration).
+
 <table>
   <tr>
     <td width="50%">
@@ -40,11 +48,6 @@ The full Electron prototype captures desktop content, builds an approximate refr
   </tr>
 </table>
 
-<p align="center">
-  <img src="docs/media/refract-correction-demo.gif" alt="Refract browser demo showing the real localized WebGL2 correction region moving across detailed content and switching to a directional prescription preset" width="94%">
-</p>
-<p align="center"><sub><strong>Live renderer evidence:</strong> captured from the real browser build. The pointer moves the localized correction region, the demo switches to a directional prescription, and the original source is briefly revealed for comparison.</sub></p>
-
 ## At a glance
 
 | Area | Current prototype |
@@ -55,19 +58,9 @@ The full Electron prototype captures desktop content, builds an approximate refr
 | **Tracking** | MediaPipe iris landmarks, eye-relative features, 3 x 3 polynomial calibration, validation, and Kalman smoothing |
 | **Desktop systems** | Screen capture, protected overlay, IPC, persistence, tray controls, global shortcuts, and packaging |
 | **Live renderer contract** | The active GPU path accepts validated odd kernels up to 15 x 15; larger kernels remain experimental/offline only |
-| **Verification** | Ten focused numerical and renderer invariants, TypeScript checks, desktop and browser builds, plus deployed interaction smoke tests |
+| **Verification** | Focused numerical and renderer invariants, TypeScript checks, desktop and browser builds, plus deployed interaction smoke tests |
 | **Kevin's focus** | Product evaluation and iteration, interface/usability refinement, desktop productization, public browser adaptation, technical documentation, and verification |
 | **Project type** | Collaborative experimental engineering prototype with later public refinement |
-
-<p align="center">
-  <a href="#why-refract">Why</a> ·
-  <a href="#system-architecture">Architecture</a> ·
-  <a href="#gaze-tracking-and-calibration">Gaze</a> ·
-  <a href="#modeling-refractive-blur">Optics</a> ·
-  <a href="#interactive-browser-demo">Demo</a> ·
-  <a href="#testing-changed-the-product">Iteration</a> ·
-  <a href="#verification-and-scope">Verification</a>
-</p>
 
 ## Why Refract
 
@@ -206,7 +199,7 @@ Refract can begin from a known prescription, but it also contains an experimenta
   </tr>
 </table>
 
-The workflow includes viewing-distance calibration, physical screen calibration using a known-size reference, Snellen-style acuity testing, astigmatism clock and fan interfaces, and contrast comparison. Its acuity-to-sphere mapping is a prototype interaction heuristic, not a validated way to infer refraction from Snellen acuity. The results screen now labels the output as a guided estimate, removes unsupported confidence and error-bound claims, and directs users toward measured values when available.
+The workflow includes viewing-distance calibration, physical screen calibration using a known-size reference, Snellen-style acuity testing, astigmatism clock and fan interfaces, and contrast comparison. Its acuity-to-sphere mapping is a prototype interaction heuristic, not a validated way to infer refraction from Snellen acuity. The results screen labels the output as a guided estimate, avoids unsupported confidence and error-bound claims, and directs users toward measured values when available.
 
 Physical calibration remains an important engineering constraint. A letter occupying the same number of CSS pixels can have very different real-world dimensions on two monitors, so screen geometry and viewing conditions belong inside the model rather than only in setup instructions.
 
@@ -290,6 +283,9 @@ The strongest next work is measurement and validation, not adding more controls:
 
 ## Technology
 
+<details>
+<summary><strong>Implementation stack</strong></summary>
+
 | Area | Technology and implementation |
 | --- | --- |
 | Desktop application | Electron 32, Electron Vite |
@@ -302,6 +298,8 @@ The strongest next work is measurement and validation, not adding more controls:
 | Desktop integration | IPC, transparent overlay, desktop capture, tray controls, global shortcuts |
 | Packaging | Electron Builder, Windows NSIS, macOS DMG, Linux AppImage |
 | Verification | TypeScript checks, focused numerical tests, GitHub Actions, production browser smoke testing |
+
+</details>
 
 ## Run Refract locally
 
@@ -385,6 +383,8 @@ scripts/                 Icon-generation tooling
 
 Refract was developed collaboratively by **Vlad Duckardt and Kevin Zhu**. The original development history remains available in [`VDuckardtt/refract`](https://github.com/VDuckardtt/refract). This portfolio repository preserves that boundary rather than presenting the core prototype as solo work.
 
+The project developed in stages: a collaborative prototype and technical exploration, exploratory user testing, interface and usability refinement, desktop productization, then public browser adaptation, documentation, and verification. My later work is documented below so the contribution boundary remains explicit.
+
 | Area | Kevin Zhu's role |
 | --- | --- |
 | **Product direction and evaluation** | Helped frame the project around adaptive-display comfort, organized and interpreted exploratory user testing, and translated recurring feedback into clearer product criteria |
@@ -401,6 +401,6 @@ Two source-history commits show parts of the later engineering work directly:
 
 ## Credits and license
 
-Refract was developed collaboratively by Vlad Duckardt and Kevin Zhu. See the [MIT License](LICENSE) for repository licensing.
+The original collaborative source history remains linked above. See the [MIT License](LICENSE) for repository licensing.
 
 The project's central challenge remains the same: refractive parameters have to become a usable computational model, noisy webcam landmarks have to become stable screen coordinates, those coordinates have to drive localized GPU correction over changing content, and the whole loop has to remain responsive, reversible, understandable, and honest about its limits.
