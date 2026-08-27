@@ -620,7 +620,7 @@ export function App(): JSX.Element {
           </div>
           <ol className="pipeline-cards">
             <li><span>01</span><strong>Model</strong><p>Sphere, cylinder, axis, distance, screen scale, and pupil size become a rotated anisotropic Gaussian PSF.</p></li>
-            <li><span>02</span><strong>Correct</strong><p>The active path forms an energy-normalized unsharp kernel and uploads it to the shared WebGL2 renderer.</p></li>
+            <li><span>02</span><strong>Correct</strong><p>The active path forms a sum-normalized unsharp kernel and uploads it to the shared WebGL2 renderer.</p></li>
             <li><span>03</span><strong>Localize</strong><p>Cursor or optional iris tracking places a smoothly faded focal region while luma/chroma and brightness safeguards remain active.</p></li>
           </ol>
 
@@ -671,7 +671,7 @@ interface DemoErrorBoundaryState {
   failed: boolean
 }
 
-export class DemoErrorBoundary extends Component<{ children: ReactNode }, DemoErrorBoundaryState> {
+export class DemoErrorBoundary extends Component<{ children: ReactNode }, DemoErrorBoundaryState {
   state: DemoErrorBoundaryState = { failed: false }
 
   static getDerivedStateFromError(): DemoErrorBoundaryState {
