@@ -20,8 +20,8 @@ const VALID_POINTS: [number, number][] = [
 const FIXATION_MS         = 1500
 const FLASH_MS            = 300
 const VALIDATION_DWELL_MS = 3000
-const ARC_R               = 24                                    // px, arc radius
-const ARC_CIRC            = +(2 * Math.PI * ARC_R).toFixed(1)    // ≈ 150.8 px
+const ARC_R               = 24
+const ARC_CIRC            = +(2 * Math.PI * ARC_R).toFixed(1)
 
 // ---------------------------------------------------------------------------
 // State / reducer
@@ -31,12 +31,12 @@ type Phase = 'intro' | 'calibrating' | 'validating' | 'results'
 
 interface State {
   phase:      Phase
-  ptIndex:    number    // 0-8, current calibration dot
-  ptReady:    boolean   // dot becomes clickable after fixation wait
-  ptFlash:    boolean   // green flash on click
-  valIndex:   number    // 0-3, current validation target
-  valErrors:  number[]  // per-target gaze error in px
-  accuracyPx: number    // mean error, set after validation
+  ptIndex:    number
+  ptReady:    boolean
+  ptFlash:    boolean
+  valIndex:   number
+  valErrors:  number[]
+  accuracyPx: number
 }
 
 const INITIAL: State = {
@@ -97,7 +97,7 @@ const KEYFRAMES = `
 `
 
 // ---------------------------------------------------------------------------
-// CalibDot - single calibration target with pulsing ring + arc countdown
+// Calibration target
 // ---------------------------------------------------------------------------
 
 interface CalibDotProps {
@@ -124,7 +124,6 @@ function CalibDot({ vpx, vpy, ready, flash, onClick }: CalibDotProps): JSX.Eleme
         cursor:        ready ? 'crosshair' : 'default',
       }}
     >
-      {/* Outer pulsing ring: 40px diameter, rgba(75,138,240,0.2) */}
       <div
         style={{
           position:     'absolute',
@@ -136,7 +135,6 @@ function CalibDot({ vpx, vpy, ready, flash, onClick }: CalibDotProps): JSX.Eleme
         }}
       />
 
-      {/* Arc countdown: shrinks from full circle to nothing over FIXATION_MS */}
       <svg
         width={56}
         height={56}
@@ -159,7 +157,6 @@ function CalibDot({ vpx, vpy, ready, flash, onClick }: CalibDotProps): JSX.Eleme
         />
       </svg>
 
-      {/* Inner dot: 12px, flashes green on click */}
       <div
         style={{
           position:     'absolute',
@@ -176,7 +173,7 @@ function CalibDot({ vpx, vpy, ready, flash, onClick }: CalibDotProps): JSX.Eleme
 }
 
 // ---------------------------------------------------------------------------
-// ValidationTarget - blinking yellow crosshair for accuracy measurement
+// Validation target
 // ---------------------------------------------------------------------------
 
 function ValidationTarget({ vpx, vpy }: { vpx: number; vpy: number }): JSX.Element {
@@ -217,20 +214,24 @@ function ValidationTarget({ vpx, vpy }: { vpx: number; vpy: number }): JSX.Eleme
 }
 
 // ---------------------------------------------------------------------------
-// ResultBadge - accuracy rating inside the results card
+// Prototype validation summary
 // ---------------------------------------------------------------------------
 
 function ResultBadge({ accuracyPx }: { accuracyPx: number }): JSX.Element {
-  const excellent = accuracyPx < 80
-  const good      = accuracyPx < 150
+  const lowError = accuracyPx < 80
+  const moderateError = accuracyPx < 150
 
-  const label   = excellent ? 'Excellent' : good ? 'Good' : 'Poor'
-  const color   = excellent ? '#34D399'   : good ? '#FBBF24' : '#F87171'
-  const message = excellent
-    ? 'Correction will track your gaze accurately.'
-    : good
-    ? 'Correction will work but tracking may occasionally drift.'
-    : 'Eye tracking is unreliable. Consider recalibrating.'
+  const label = lowError
+    ? 'Low validation error'
+    : moderateError
+      ? 'Moderate validation error'
+      : 'High validation error'
+  const color = lowError ? '#34D399' : moderateError ? '#FBBF24' : '#F87171'
+  const message = lowError
+    ? 'This calibration produced a relatively small mean screen-space error. Tracking can still drift as head pose, lighting, or camera position changes.'
+    : moderateError
+      ? 'This calibration produced a moderate mean screen-space error. Recalibrate if the correction region drifts during use.'
+      : 'This calibration produced a high mean screen-space error. Recalibration is recommended before using camera gaze.'
 
   return (
     <>
@@ -248,7 +249,7 @@ function ResultBadge({ accuracyPx }: { accuracyPx: number }): JSX.Element {
       </p>
       <p
         className="text-body-sm text-text-secondary font-primary"
-        style={{ maxWidth: 360, margin: '12px 0 0' }}
+        style={{ maxWidth: 380, margin: '12px 0 0', lineHeight: 1.6 }}
       >
         {message}
       </p>
@@ -302,35 +303,27 @@ export function CalibrationOverlay({
 }: CalibrationOverlayProps): JSX.Element {
   const [state, dispatch] = useReducer(reducer, INITIAL)
 
-  // Allow the overlay window to receive mouse events during calibration
   useEffect(() => {
     window.electronAPI.setOverlayInteractive(true)
     return () => { window.electronAPI.setOverlayInteractive(false) }
   }, [])
 
-  // Hide the camera preview as soon as the user leaves the intro screen.
-  // The preview is shown by Calibration.tsx on init; during dot-clicking it
-  // would render on top of the 90%/90% corner dot and block it.
   useEffect(() => {
     if (state.phase !== 'intro') gazeTracker.setCameraPreview(false)
   }, [state.phase, gazeTracker])
 
-  // Fixation timer - starts fresh each time a new calibration dot appears.
-  // Re-runs on ptIndex change so each dot gets its own 1.5s countdown.
   useEffect(() => {
     if (state.phase !== 'calibrating' || state.ptFlash) return
     const t = setTimeout(() => dispatch({ type: 'PT_READY' }), FIXATION_MS)
     return () => clearTimeout(t)
   }, [state.phase, state.ptIndex, state.ptFlash])
 
-  // Advance to next dot (or to validating) after the green flash
   useEffect(() => {
     if (!state.ptFlash) return
     const t = setTimeout(() => dispatch({ type: 'PT_NEXT' }), FLASH_MS)
     return () => clearTimeout(t)
   }, [state.ptFlash])
 
-  // Validation: sample gaze after VALIDATION_DWELL_MS then advance target
   useEffect(() => {
     if (state.phase !== 'validating' || state.valIndex >= VALID_POINTS.length) return
 
@@ -343,35 +336,25 @@ export function CalibrationOverlay({
       const valid = gaze != null && Number.isFinite(gaze.x) && Number.isFinite(gaze.y)
       const error = valid
         ? Math.hypot(gaze!.x - targetX, gaze!.y - targetY)
-        : 150  // pessimistic fallback when tracker has no (or invalid) data
+        : 150
       dispatch({ type: 'VALIDATE_SAMPLE', error })
     }, VALIDATION_DWELL_MS)
 
     return () => clearTimeout(t)
   }, [state.phase, state.valIndex, gazeTracker])
 
-  // -- Event handlers ------------------------------------------------------
-
   function handleDotClick(): void {
     const [vpx, vpy] = CALIB_POINTS[state.ptIndex]
-    // WebGazer trains and predicts in viewport (client) coordinates - the same
-    // space its own click listener uses, and the space the controller converts
-    // to screen later (by adding window.screenX/Y in onGaze). Record the dot's
-    // viewport position, NOT screen coords; mixing the two corrupts the
-    // regression and was a source of the unreliable tracking.
     const clientX = (vpx / 100) * window.innerWidth
     const clientY = (vpy / 100) * window.innerHeight
     gazeTracker.recordCalibrationPoint(clientX, clientY)
     dispatch({ type: 'PT_CLICK' })
   }
 
-  // -- Render --------------------------------------------------------------
-
   const content = (
     <>
       <style>{KEYFRAMES}</style>
 
-      {/* -- INTRO ------------------------------------------------------ */}
       {state.phase === 'intro' && (
         <div style={{ ...SCRIM_STYLE, background: 'rgba(0,0,0,0.8)' }}>
           <div style={CARD_STYLE}>
@@ -414,11 +397,8 @@ export function CalibrationOverlay({
         </div>
       )}
 
-      {/* -- CALIBRATING ------------------------------------------------ */}
       {state.phase === 'calibrating' && (
         <>
-          {/* Background scrim - fully opaque so the home screen can't bleed through.
-              pointer-events: none so the dot above can still receive clicks. */}
           <div
             style={{
               position:      'fixed', inset: 0, zIndex: 9999,
@@ -427,7 +407,6 @@ export function CalibrationOverlay({
             }}
           />
 
-          {/* Progress counter */}
           <div
             style={{
               position:      'fixed', top: 24, left: '50%',
@@ -440,7 +419,6 @@ export function CalibrationOverlay({
             </span>
           </div>
 
-          {/* key forces remount (and thus animation restart) on each new point */}
           <CalibDot
             key={state.ptIndex}
             vpx={CALIB_POINTS[state.ptIndex][0]}
@@ -452,7 +430,6 @@ export function CalibrationOverlay({
         </>
       )}
 
-      {/* -- VALIDATING ------------------------------------------------- */}
       {state.phase === 'validating' && state.valIndex < VALID_POINTS.length && (
         <>
           <div
@@ -470,7 +447,7 @@ export function CalibrationOverlay({
             }}
           >
             <span className="text-caption text-text-tertiary font-primary">
-              Validating… look at the target
+              Validating... look at the target
             </span>
           </div>
 
@@ -482,7 +459,6 @@ export function CalibrationOverlay({
         </>
       )}
 
-      {/* -- RESULTS ---------------------------------------------------- */}
       {state.phase === 'results' && (
         <div style={{ ...SCRIM_STYLE, background: 'rgba(0,0,0,0.8)' }}>
           <div style={CARD_STYLE}>
