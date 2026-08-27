@@ -105,7 +105,6 @@ const CorrectionCanvas: React.FC = () => {
     renderer.setEnabled(true)
     renderer.setFovealParams(state.fovealRadius, state.fovealRadius * BLEND_RADIUS_RATIO)
     renderer.setStrength(state.strength)
-    renderer.setZoom(0.12)
     renderer.render()
 
     const frameTime = performance.now() - frameStart
