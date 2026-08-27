@@ -43,15 +43,16 @@ export function sphericalEquivalent(rx: EyePrescription): number {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Snellen denominator → estimated sphere power
+// 3. Snellen denominator to prototype sphere estimate
 // ---------------------------------------------------------------------------
 
 /**
- * Clinical correlation table - maps Snellen denominator to estimated
- * sphere power in diopters. Negative values = myopia.
+ * Prototype guidance table mapping Snellen denominator to a coarse sphere
+ * estimate for the experimental guided workflow. Negative values = myopia.
  *
- * Values derived from population-level visual acuity studies correlating
- * uncorrected Snellen acuity with refractive error.
+ * This is an interaction heuristic, not a validated refraction model. Visual
+ * acuity and refractive error are related at a population level but do not map
+ * one-to-one for an individual. See docs/OPTICAL_MODEL.md for claim boundaries.
  */
 const SNELLEN_TABLE: readonly [denominator: number, sphere: number][] = [
   [20, 0.0],
@@ -66,9 +67,9 @@ const SNELLEN_TABLE: readonly [denominator: number, sphere: number][] = [
 ]
 
 /**
- * Return an estimated sphere correction (diopters) for a Snellen denominator.
- * Interpolates linearly between table entries when the denominator falls
- * between known values.
+ * Return the guided workflow's prototype sphere estimate for a Snellen
+ * denominator. Interpolates linearly between table entries when the denominator
+ * falls between known values. This output must not be treated as a prescription.
  */
 export function snellenToSphere(snellenDenominator: number): number {
   const denom = Math.max(20, snellenDenominator)
@@ -122,18 +123,19 @@ export interface BlurRadius {
 }
 
 /**
- * Compute the Gaussian blur radius (in pixels) that models the defocus
- * induced by the given prescription at the specified viewing distance.
+ * Compute the prototype Gaussian blur scale in screen pixels.
  *
- * Defocus blur formula (geometric optics):
- *   blur_metres = |D| × pupil_m / (1 + |D| × dist_m)
- *   blur_px     = blur_metres × screenPPM
+ * Geometrical optics motivates blur growing with pupil size and dioptric
+ * defocus, but the distance-adjusted mapping below is an engineering heuristic
+ * for display-space kernel sizing. It is not a clinically validated retinal
+ * blur equation, and its output is used as Gaussian sigma rather than a measured
+ * retinal blur-disc diameter. See docs/OPTICAL_MODEL.md.
  *
  * For a spherocylindrical Rx:
  *   - The sphere meridian has power = sphere
  *   - The cylinder meridian has power = sphere + cylinder
- *   Each meridian contributes an independent sigma; the result is an
- *   elliptical blur kernel rotated by the cylinder axis.
+ *   Each meridian contributes an independent scale; the result is an
+ *   elliptical Gaussian kernel rotated by the cylinder axis.
  */
 export function blurRadiusPixels(params: BlurRadiusParams): BlurRadius {
   const {
@@ -144,6 +146,20 @@ export function blurRadiusPixels(params: BlurRadiusParams): BlurRadius {
     screenPPM,
     pupilDiameterMm = 4
   } = params
+
+  const finiteInputs = [sphere, viewingDistanceCm, screenPPM, pupilDiameterMm]
+  if (!finiteInputs.every(Number.isFinite)) {
+    throw new Error('Blur-model inputs must be finite')
+  }
+  if (cylinder !== null && !Number.isFinite(cylinder)) {
+    throw new Error('Cylinder must be finite when provided')
+  }
+  if (axis !== null && axis !== undefined && !Number.isFinite(axis)) {
+    throw new Error('Axis must be finite when provided')
+  }
+  if (viewingDistanceCm <= 0 || screenPPM <= 0 || pupilDiameterMm <= 0) {
+    throw new Error('Viewing distance, screen density, and pupil diameter must be positive')
+  }
 
   const dist_m = viewingDistanceCm / 100
   const pupil_m = pupilDiameterMm / 1000
@@ -181,7 +197,7 @@ export function blurRadiusPixels(params: BlurRadiusParams): BlurRadius {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Exam results → FullPrescription
+// 5. Exam results to FullPrescription
 // ---------------------------------------------------------------------------
 
 export interface CalibrationData {
