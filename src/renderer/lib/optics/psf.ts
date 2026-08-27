@@ -2,7 +2,7 @@ import type { EyePrescription, PSFKernel, CorrectionKernel, EyeSide } from '../t
 import { blurRadiusPixels } from './prescription'
 
 // ---------------------------------------------------------------------------
-// Public option interfaces (re-exported so the store can import them here)
+// Public option interfaces
 // ---------------------------------------------------------------------------
 
 export interface PSFOptions {
@@ -13,27 +13,25 @@ export interface PSFOptions {
 }
 
 export interface CorrectionOptions {
-  strength: number
-  method: 'wiener' | 'unsharp'
+  method: 'unsharp'
+  /** Backward-compatible input. Runtime strength is applied by the shader. */
+  strength?: number
 }
 
 // ---------------------------------------------------------------------------
-// 1. Anisotropic (rotated elliptical) Gaussian kernel
+// 1. Anisotropic rotated elliptical Gaussian kernel
 // ---------------------------------------------------------------------------
 
 /**
- * Builds a 2-D rotated elliptical Gaussian kernel of dimensions size×size.
+ * Builds a 2-D rotated elliptical Gaussian kernel of dimensions size x size.
  *
  * For each offset (dx, dy) from the kernel centre:
- *   1. Rotate into the kernel's principal-axis frame:
- *        dx' =  dx·cos θ + dy·sin θ
- *        dy' = -dx·sin θ + dy·cos θ
- *   2. Evaluate the 2-D Gaussian:
- *        val = exp(-0.5 · ((dx'/σX)² + (dy'/σY)²))
- *   3. Normalise so all values sum exactly to 1.0
+ *   1. Rotate into the kernel's principal-axis frame.
+ *   2. Evaluate the 2-D Gaussian.
+ *   3. Normalize so all values sum exactly to 1.0.
  *
  * Returns a row-major number[] of length size*size.
- * number[] (not Float32Array) keeps the output IPC-serialisable.
+ * number[] keeps the output IPC-serializable.
  */
 export function computeAnisotropicGaussianKernel(params: {
   sigmaX: number
@@ -43,7 +41,6 @@ export function computeAnisotropicGaussianKernel(params: {
 }): number[] {
   const { sigmaX, sigmaY, angleDeg, size } = params
 
-  // Guard: kernel must be odd-sized and at least 1×1
   const n = Math.max(1, size % 2 === 0 ? size + 1 : size)
   const half = Math.floor(n / 2)
   const theta = (angleDeg * Math.PI) / 180
@@ -51,7 +48,6 @@ export function computeAnisotropicGaussianKernel(params: {
   const cosT = Math.cos(theta)
   const sinT = Math.sin(theta)
 
-  // Reciprocals computed once outside the loop
   const inv2SX2 = 1 / (2 * sigmaX * sigmaX)
   const inv2SY2 = 1 / (2 * sigmaY * sigmaY)
 
@@ -63,7 +59,6 @@ export function computeAnisotropicGaussianKernel(params: {
     for (let col = 0; col < n; col++) {
       const dx = col - half
 
-      // Rotate into the ellipse frame
       const dxR = dx * cosT + dy * sinT
       const dyR = -dx * sinT + dy * cosT
 
@@ -73,11 +68,8 @@ export function computeAnisotropicGaussianKernel(params: {
     }
   }
 
-  // Normalise so the kernel sums to 1 (energy-preserving convolution)
   if (sum > 0) {
-    for (let i = 0; i < data.length; i++) {
-      data[i] /= sum
-    }
+    for (let i = 0; i < data.length; i++) data[i] /= sum
   }
 
   return data
@@ -91,14 +83,12 @@ export function computeAnisotropicGaussianKernel(params: {
  * Compute the Point Spread Function kernel for the given prescription and
  * viewing conditions.
  *
- * - If the eye is emmetropic (sphere≈0, no cylinder) returns an identity kernel
- *   so downstream convolution is a no-op.
- * - Kernel size is auto-derived: 2·ceil(3·max(σX,σY))+1, clamped to [7, 31].
- *   Overrideable via params.kernelSize.
+ * If the eye is emmetropic, return an identity kernel so downstream convolution
+ * is a no-op. Kernel size is derived from the largest sigma and clamped to a
+ * practical real-time range unless the caller provides an explicit size.
  *
- * The PSF models blur as a Gaussian - a pragmatic approximation that's fast
- * to convolve and visually accurate for moderate refractive errors (≤4 D).
- * Higher-order aberrations (Zernike) can replace this in a later phase.
+ * The Gaussian PSF is a pragmatic engineering approximation rather than a
+ * clinically calibrated wavefront model.
  */
 export function computePSF(
   rx: EyePrescription,
@@ -107,12 +97,11 @@ export function computePSF(
 ): PSFKernel {
   const {
     viewingDistanceCm,
-    screenPPM = 3780,      // ~96 DPI fallback
+    screenPPM = 3780,
     pupilDiameterMm = 4,
     kernelSize
   } = opts
 
-  // Emmetropic eye - skip all computation
   const isEmmetropic =
     Math.abs(rx.sphere) < 0.125 &&
     (rx.cylinder === null || Math.abs(rx.cylinder) < 0.125)
@@ -129,7 +118,6 @@ export function computePSF(
     }
   }
 
-  // Map prescription → blur radii in pixels
   const { sigmaX, sigmaY, angleDeg } = blurRadiusPixels({
     sphere: rx.sphere,
     cylinder: rx.cylinder,
@@ -139,7 +127,6 @@ export function computePSF(
     pupilDiameterMm
   })
 
-  // Auto-size: 3σ coverage on the largest axis, always odd, clamped [7, 31]
   const autoSize = 2 * Math.ceil(3 * Math.max(sigmaX, sigmaY)) + 1
   const size = kernelSize ?? Math.min(31, Math.max(7, autoSize))
 
@@ -150,7 +137,7 @@ export function computePSF(
     size,
     sigmaX,
     sigmaY,
-    angle: (angleDeg * Math.PI) / 180,  // stored as radians in the type
+    angle: (angleDeg * Math.PI) / 180,
     eye
   }
 }
@@ -159,11 +146,6 @@ export function computePSF(
 // 3. Identity kernel
 // ---------------------------------------------------------------------------
 
-/**
- * A size×size kernel with 1 in the centre and 0 everywhere else.
- * Convolution with an identity kernel is a no-op - used for emmetropic eyes
- * or when correction is disabled, avoiding conditional branches downstream.
- */
 export function getIdentityKernel(size: number): number[] {
   const n = Math.max(1, size % 2 === 0 ? size + 1 : size)
   const data = new Array<number>(n * n).fill(0)
@@ -172,17 +154,9 @@ export function getIdentityKernel(size: number): number[] {
 }
 
 // ---------------------------------------------------------------------------
-// 4. PSF canvas visualisation (debug)
+// 4. PSF canvas visualization
 // ---------------------------------------------------------------------------
 
-/**
- * Renders a PSF kernel as a grayscale HTMLCanvasElement.
- * Useful for debug overlays and the settings screen's kernel preview.
- *
- * @param psf   The PSF to render.
- * @param scale Pixel magnification factor (default 8 - so a 15×15 kernel
- *              renders as a 120×120 canvas, visible without squinting).
- */
 export function visualizePSFAsCanvas(psf: PSFKernel, scale = 8): HTMLCanvasElement {
   const { kernelData, size } = psf
   const canvas = document.createElement('canvas')
@@ -192,8 +166,6 @@ export function visualizePSFAsCanvas(psf: PSFKernel, scale = 8): HTMLCanvasEleme
   const ctx = canvas.getContext('2d')
   if (!ctx) return canvas
 
-  // Find the max value for normalised display (PSF peak may be < 1 after
-  // normalisation spreads energy across many pixels)
   const maxVal = Math.max(...kernelData, 1e-9)
 
   for (let row = 0; row < size; row++) {
@@ -209,13 +181,22 @@ export function visualizePSFAsCanvas(psf: PSFKernel, scale = 8): HTMLCanvasEleme
 }
 
 // ---------------------------------------------------------------------------
-// Correction kernel (stub retained from Phase 1 - Wiener filter in Phase 3)
+// 5. Live correction kernel
 // ---------------------------------------------------------------------------
 
 /**
- * Derives a sharpening kernel from a PSF.
- * Current implementation: unsharp-mask blend at the requested strength.
- * Wiener deconvolution will replace this in Phase 3.
+ * Derive the full-strength spatial correction kernel from a PSF.
+ *
+ * The active live path uses a normalized unsharp kernel:
+ *
+ *   K = 2I - PSF
+ *
+ * Runtime strength is intentionally not baked into K. The WebGL shader owns the
+ * single user-facing strength blend, which prevents stale kernels when the
+ * slider changes and makes the meaning of strength unambiguous.
+ *
+ * Frequency-domain Wiener inversion remains a separate experiment in wiener.ts
+ * and is not presented as an active runtime option.
  */
 export function computeCorrectionKernel(
   psf: PSFKernel,
@@ -224,30 +205,13 @@ export function computeCorrectionKernel(
   viewingDistanceCm: number
 ): CorrectionKernel {
   const { kernelData, size, eye } = psf
-  const { strength, method } = opts
+  void opts
 
-  let corrected: number[]
+  const identity = getIdentityKernel(size)
+  let corrected = kernelData.map((v, i) => 2 * identity[i] - v)
 
-  if (method === 'unsharp') {
-    // Unsharp mask: identity - strength × (identity - PSF)
-    // Equivalent to: (1 + strength) × identity - strength × PSF
-    const identity = getIdentityKernel(size)
-    corrected = kernelData.map((v, i) => {
-      return (1 + strength) * identity[i] - strength * v
-    })
-  } else {
-    // 'wiener' placeholder - same as unsharp until Phase 3
-    const identity = getIdentityKernel(size)
-    corrected = kernelData.map((v, i) => {
-      return (1 + strength) * identity[i] - strength * v
-    })
-  }
-
-  // Re-normalise so the correction kernel sums to 1 (preserves average luminance)
   const sum = corrected.reduce((a, b) => a + b, 0)
-  if (Math.abs(sum) > 1e-9) {
-    corrected = corrected.map((v) => v / sum)
-  }
+  if (Math.abs(sum) > 1e-9) corrected = corrected.map((v) => v / sum)
 
   return {
     kernelData: corrected,

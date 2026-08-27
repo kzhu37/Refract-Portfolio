@@ -3,6 +3,7 @@ dist
 out
 dist-electron
 web-demo-dist
+.test-dist
 
 .env
 .env.*

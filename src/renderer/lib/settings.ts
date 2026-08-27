@@ -10,7 +10,7 @@ export interface RendererSettings {
   fovealRadius: number
   eyeTrackingEnabled: boolean
   trackingMode: TrackingMode
-  activeEye: EyeSide | 'both'
+  activeEye: EyeSide
   viewingDistanceCm: number
 }
 
@@ -18,9 +18,9 @@ export function getSettings(): RendererSettings {
   return {
     correctionStrength: 0.8,
     fovealRadius: 100,
-    eyeTrackingEnabled: true,
-    trackingMode: 'eye',
-    activeEye: 'both',
+    eyeTrackingEnabled: false,
+    trackingMode: 'cursor',
+    activeEye: 'OD',
     viewingDistanceCm: Number(import.meta.env.VITE_DEFAULT_VIEWING_DISTANCE_CM ?? 60)
   }
 }

@@ -22,7 +22,7 @@ import { getSettings } from '../settings'
 interface PrescriptionState {
   prescription: FullPrescription | null
   examResults: { OD: ExamResult | null; OS: ExamResult | null }
-  activeEye: EyeSide | 'both'
+  activeEye: EyeSide
   correctionEnabled: boolean
   correctionMode: CorrectionMode
   correctionStrength: number
@@ -48,6 +48,8 @@ interface PrescriptionActions {
   setExamResult(eye: EyeSide, result: ExamResult): void
   toggleCorrection(): void
   setCorrectionStrength(strength: number): void
+  setActiveEye(eye: EyeSide): void
+  setFovealRadius(radius: number): void
   setTrackingMode(mode: TrackingMode): void
   setGazePoint(point: GazePoint): void
   setViewingDistance(cm: number): void
@@ -59,23 +61,22 @@ interface PrescriptionActions {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Assemble an OverlayState snapshot from current store state. */
 function buildOverlayState(s: PrescriptionState): OverlayState {
   return {
     enabled: s.correctionEnabled,
     mode: s.correctionMode,
-    // Send 0 when disabled so the overlay clears, but keep the store value intact
-    // so re-enabling restores the user's chosen strength without resetting to 0.
+    // Strength is applied exactly once, in the WebGL shader. The cached kernel
+    // stays full-strength so slider updates do not leave stale kernel state.
     strength: s.correctionEnabled ? s.correctionStrength : 0,
     gazePoint: s.gazePoint,
     kernelOD: s.correctionKernelCache.OD,
     kernelOS: s.correctionKernelCache.OS,
+    activeEye: s.activeEye,
     fovealRadius: s.fovealRadius,
     tracking: s.trackingMode
   }
 }
 
-/** Fire-and-forget send to main process (safe to call at any rate). */
 function sendStateToMain(state: OverlayState): void {
   window.electronAPI?.sendOverlayState(state)
 }
@@ -90,9 +91,6 @@ const initialSettings = getSettings()
 
 export const usePrescriptionStore = create<Store>()(
   subscribeWithSelector((set, get) => ({
-    // -------------------------------------------------------------------------
-    // Initial state
-    // -------------------------------------------------------------------------
     prescription: null,
     examResults: { OD: null, OS: null },
     activeEye: initialSettings.activeEye,
@@ -109,13 +107,8 @@ export const usePrescriptionStore = create<Store>()(
     fovealRadius: initialSettings.fovealRadius,
     isOverlayActive: false,
 
-    // -------------------------------------------------------------------------
-    // Actions
-    // -------------------------------------------------------------------------
-
     setPrescription(rx) {
       set({ prescription: rx })
-      // Persist to disk then recompute kernels with the new Rx.
       window.electronAPI?.savePrescription(rx)
       get().computeAndCacheKernels()
     },
@@ -139,7 +132,6 @@ export const usePrescriptionStore = create<Store>()(
 
       set({ prescription: updated })
       window.electronAPI?.savePrescription(updated)
-      // Invalidate only the affected eye's cache then recompute.
       get().invalidatePSFCache(eye)
       get().computeAndCacheKernels()
     },
@@ -151,15 +143,10 @@ export const usePrescriptionStore = create<Store>()(
     },
 
     toggleCorrection() {
-      const s = get()
-      const next = !s.correctionEnabled
-      const nextMode: CorrectionMode = next ? 'correction' : 'none'
-
-      // Don't touch correctionStrength - buildOverlayState sends 0 when disabled
-      // so the overlay clears, but the slider value is preserved for re-enable.
+      const next = !get().correctionEnabled
       set({
         correctionEnabled: next,
-        correctionMode: nextMode,
+        correctionMode: next ? 'correction' : 'none',
         isOverlayActive: next
       })
 
@@ -168,15 +155,23 @@ export const usePrescriptionStore = create<Store>()(
     },
 
     setCorrectionStrength(strength) {
-      set({ correctionStrength: strength })
+      const bounded = Math.min(1, Math.max(0, strength))
+      set({ correctionStrength: bounded })
+      sendStateToMain(buildOverlayState(get()))
+    },
+
+    setActiveEye(eye) {
+      set({ activeEye: eye })
+      sendStateToMain(buildOverlayState(get()))
+    },
+
+    setFovealRadius(radius) {
+      const bounded = Math.min(300, Math.max(50, radius))
+      set({ fovealRadius: bounded })
       sendStateToMain(buildOverlayState(get()))
     },
 
     setTrackingMode(mode) {
-      // Keep eyeTrackingEnabled in lockstep so the rest of the app (and the
-      // webcam tracker) reflects whether the camera is the active source.
-      // Drop the last gaze point when leaving eye mode so a stale fixation
-      // doesn't linger before the cursor poller takes over.
       set({
         trackingMode: mode,
         eyeTrackingEnabled: mode === 'eye',
@@ -187,14 +182,13 @@ export const usePrescriptionStore = create<Store>()(
 
     setGazePoint(point) {
       set({ gazePoint: point })
-      // Forward to main; main routes it to the overlay window.
       window.electronAPI?.sendGazeUpdate(point)
     },
 
     setViewingDistance(cm) {
-      set({ viewingDistanceCm: cm })
-      window.electronAPI?.sendDistanceUpdate(cm)
-      // Distance affects defocus calculations - invalidate all cached kernels.
+      const bounded = Math.min(120, Math.max(30, cm))
+      set({ viewingDistanceCm: bounded })
+      window.electronAPI?.sendDistanceUpdate(bounded)
       get().invalidatePSFCache()
       get().computeAndCacheKernels()
     },
@@ -223,8 +217,6 @@ export const usePrescriptionStore = create<Store>()(
 
       for (const eye of eyes) {
         const rx = s.prescription[eye]
-
-        // Compute PSF (reuse cache entry if still valid).
         const psf =
           newPSF[eye] ??
           computePSF(
@@ -234,11 +226,12 @@ export const usePrescriptionStore = create<Store>()(
           )
         newPSF[eye] = psf
 
-        // Compute correction kernel from PSF.
-        newKernels[eye] = computeCorrectionKernel(psf, rx, {
-          strength: s.correctionStrength,
-          method: 'unsharp'
-        }, s.viewingDistanceCm)
+        newKernels[eye] = computeCorrectionKernel(
+          psf,
+          rx,
+          { method: 'unsharp' },
+          s.viewingDistanceCm
+        )
       }
 
       set({
@@ -246,15 +239,10 @@ export const usePrescriptionStore = create<Store>()(
         correctionKernelCache: newKernels
       })
 
-      // Push updated kernels to main process → overlay.
       sendStateToMain(buildOverlayState(get()))
     }
   }))
 )
-
-// ---------------------------------------------------------------------------
-// Selector hooks
-// ---------------------------------------------------------------------------
 
 export function usePrescription(): FullPrescription | null {
   return usePrescriptionStore((s) => s.prescription)

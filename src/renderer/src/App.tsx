@@ -11,11 +11,11 @@ import refractPrism from './assets/refract-prism.svg'
 // -- Sidebar nav ---------------------------------------------------------------
 
 const NAV_ITEMS = [
-  { label: 'Home',            path: '/',            icon: HomeIcon    },
-  { label: 'Eye Exam',        path: '/exam',         icon: ScanIcon    },
-  { label: 'My Prescription', path: '/prescription', icon: FileIcon    },
-  { label: 'Settings',        path: '/settings',     icon: GearIcon    },
-  { label: 'Help',            path: '/help',         icon: HelpIcon    },
+  { label: 'Home',            path: '/',            icon: HomeIcon },
+  { label: 'Guided Check',    path: '/exam',         icon: ScanIcon },
+  { label: 'My Prescription', path: '/prescription', icon: FileIcon },
+  { label: 'Settings',        path: '/settings',     icon: GearIcon },
+  { label: 'Help',            path: '/help',         icon: HelpIcon },
 ] as const
 
 function Sidebar({ section }: { section: string }) {
@@ -23,12 +23,9 @@ function Sidebar({ section }: { section: string }) {
     <aside className="app-sidebar">
       <NavLink to="/" end aria-label="Refract Home" className="brand-home">
         <img className="brand-mark" src={refractPrism} alt="" />
-        <span className="brand-wordmark">
-          refract
-        </span>
+        <span className="brand-wordmark">refract</span>
       </NavLink>
 
-      {/* Nav */}
       <nav className="sidebar-nav" aria-label="Primary navigation">
         {NAV_ITEMS.map(({ label, path, icon: Icon }) => (
           <NavLink
@@ -43,7 +40,6 @@ function Sidebar({ section }: { section: string }) {
         ))}
       </nav>
 
-      {/* Footer */}
       <div className="sidebar-footer">
         <span>{section}</span>
       </div>
@@ -54,26 +50,26 @@ function Sidebar({ section }: { section: string }) {
 // -- Window title sync ---------------------------------------------------------
 
 const PATH_TO_SECTION: Record<string, string> = {
-  '/':            'Home',
-  '/exam':        'Eye Exam',
+  '/': 'Home',
+  '/exam': 'Guided Check',
   '/prescription': 'My Prescription',
-  '/settings':    'Settings',
+  '/settings': 'Settings',
   '/calibration': 'Calibration',
-  '/help':        'Help',
+  '/help': 'Help',
 }
 
 function useWindowTitle() {
   const { pathname } = useLocation()
   useEffect(() => {
     const key = Object.keys(PATH_TO_SECTION)
-      .filter(k => k === '/' ? pathname === '/' : pathname.startsWith(k))
+      .filter((item) => item === '/' ? pathname === '/' : pathname.startsWith(item))
       .sort((a, b) => b.length - a.length)[0] ?? '/'
     const section = PATH_TO_SECTION[key] ?? 'Refract'
     document.title = `Refract: ${section}`
   }, [pathname])
 
   const key = Object.keys(PATH_TO_SECTION)
-    .filter(k => k === '/' ? pathname === '/' : pathname.startsWith(k))
+    .filter((item) => item === '/' ? pathname === '/' : pathname.startsWith(item))
     .sort((a, b) => b.length - a.length)[0] ?? '/'
   return PATH_TO_SECTION[key] ?? ''
 }
@@ -81,27 +77,26 @@ function useWindowTitle() {
 // -- App shell -----------------------------------------------------------------
 
 function App(): JSX.Element {
-  const section  = useWindowTitle()
+  const section = useWindowTitle()
   const { pathname } = useLocation()
-  const isExam   = pathname.startsWith('/exam')
+  const isExam = pathname.startsWith('/exam')
 
   return (
-      <div className="app-shell">
-        {/* Sidebar is hidden during the full-screen exam wizard */}
-        {!isExam && <Sidebar section={section} />}
+    <div className="app-shell">
+      {!isExam && <Sidebar section={section} />}
 
-        <main className="app-main">
-          <Routes>
-            <Route path="/"               element={<Home />} />
-            <Route path="/exam"           element={<Exam />} />
-            <Route path="/exam/:step"     element={<Exam />} />
-            <Route path="/prescription"   element={<PrescriptionEntry />} />
-            <Route path="/settings"       element={<Settings />} />
-            <Route path="/calibration"    element={<Calibration />} />
-            <Route path="/help"           element={<Help />} />
-          </Routes>
-        </main>
-      </div>
+      <main className="app-main">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/exam" element={<Exam />} />
+          <Route path="/exam/:step" element={<Exam />} />
+          <Route path="/prescription" element={<PrescriptionEntry />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/calibration" element={<Calibration />} />
+          <Route path="/help" element={<Help />} />
+        </Routes>
+      </main>
+    </div>
   )
 }
 
