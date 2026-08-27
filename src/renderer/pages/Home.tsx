@@ -74,7 +74,7 @@ function RxRow({ label, rx }: { label: 'OD' | 'OS'; rx: EyePrescription }) {
           <>
             <span className="home-rx-operator">/</span>
             <span className="home-rx-value">{fmtDiop(rx.cylinder)}</span>
-            <span className="home-rx-operator">×</span>
+            <span className="home-rx-operator">x</span>
             <span className="home-rx-value home-rx-axis">{rx.axis ?? 0}</span>
           </>
         )}
@@ -140,7 +140,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   },
   {
     label: 'Settings',
-    description: 'Tune correction preferences',
+    description: 'Tune active prototype controls',
     path: '/settings',
     Icon: ({ className }) => (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -155,27 +155,27 @@ const QUICK_ACTIONS: QuickAction[] = [
 
 export function Home() {
   const navigate = useNavigate()
-  const prescription = usePrescriptionStore((s) => s.prescription)
-  const correctionEnabled = usePrescriptionStore((s) => s.correctionEnabled)
-  const eyeTrackingCalibrated = usePrescriptionStore((s) => s.eyeTrackingCalibrated)
-  const viewingDistanceCm = usePrescriptionStore((s) => s.viewingDistanceCm)
-  const activeEye = usePrescriptionStore((s) => s.activeEye)
-  const toggleCorrection = usePrescriptionStore((s) => s.toggleCorrection)
+  const prescription = usePrescriptionStore((state) => state.prescription)
+  const correctionEnabled = usePrescriptionStore((state) => state.correctionEnabled)
+  const eyeTrackingCalibrated = usePrescriptionStore((state) => state.eyeTrackingCalibrated)
+  const viewingDistanceCm = usePrescriptionStore((state) => state.viewingDistanceCm)
+  const activeEye = usePrescriptionStore((state) => state.activeEye)
+  const trackingMode = usePrescriptionStore((state) => state.trackingMode)
+  const toggleCorrection = usePrescriptionStore((state) => state.toggleCorrection)
 
-  const eyeLabel = activeEye === 'both' ? 'Both' : activeEye
   const stats = [
     {
-      label: 'Eye tracking',
-      value: eyeTrackingCalibrated ? 'Calibrated ✓' : 'Not calibrated',
+      label: 'Tracking',
+      value: trackingMode === 'cursor' ? 'Cursor' : eyeTrackingCalibrated ? 'Eye calibrated' : 'Eye not calibrated',
     },
     { label: 'Distance', value: `${viewingDistanceCm} cm` },
-    { label: 'Selected eye', value: eyeLabel },
+    { label: 'Active profile', value: activeEye },
   ]
 
   return (
     <div className="home-shell">
       <div className="home-shortcut-chip">
-        <span className="font-mono text-caption text-text-tertiary tracking-wide">⌘ Shift V</span>
+        <span className="font-mono text-caption text-text-tertiary tracking-wide">Cmd/Ctrl Shift V</span>
       </div>
 
       <section className="home-workspace">
@@ -196,7 +196,7 @@ export function Home() {
                 <div>
                   <span className="home-correction-row__title">Correction</span>
                   <span className="home-correction-row__hint">
-                    {correctionEnabled ? 'Applied to your selected eye view' : 'Ready when you need it'}
+                    {correctionEnabled ? `Using the ${activeEye} optical profile` : 'Ready when you need it'}
                   </span>
                 </div>
                 <Toggle on={correctionEnabled} onChange={toggleCorrection} />
@@ -214,13 +214,13 @@ export function Home() {
           ) : (
             <div className="home-empty-state">
               <h1>Set up your prescription to get started</h1>
-              <p>Enter your current values or take the guided eye exam.</p>
+              <p>Enter your current values or take the guided vision check.</p>
               <div className="flex flex-wrap justify-center gap-3">
                 <button
                   onClick={() => navigate('/exam')}
                   className="px-6 py-3 rounded-btn text-body-sm font-medium text-text-on-brand cursor-pointer border-none outline-none transition-all duration-150 hover:brightness-110 bg-brand-gradient"
                 >
-                  Take Eye Exam →
+                  Start Guided Check
                 </button>
                 <button
                   onClick={() => navigate('/prescription')}
