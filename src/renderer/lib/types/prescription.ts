@@ -50,7 +50,7 @@ export interface GazePoint {
   x: number
   y: number
   timestamp: number
-  /** 0-1 WebGazer confidence score */
+  /** 0-1 confidence reported by the active gaze tracker */
   confidence: number
 }
 
@@ -77,11 +77,13 @@ export type TrackingMode = 'eye' | 'cursor'
 export interface OverlayState {
   enabled: boolean
   mode: CorrectionMode
-  /** 0-1 blend strength of the correction */
+  /** 0-1 blend strength applied by the WebGL shader */
   strength: number
   gazePoint: GazePoint | null
   kernelOD: CorrectionKernel | null
   kernelOS: CorrectionKernel | null
+  /** Single eye profile used by the current screen-level correction pass */
+  activeEye: EyeSide
   /** Radius in pixels of the foveal correction region */
   fovealRadius: number
   /** Where the bubble follows: webcam gaze or the mouse cursor */
