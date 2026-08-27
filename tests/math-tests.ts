@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict'
 import {
+  LIVE_CORRECTION_KERNEL_SIZE,
+  validateLiveKernelDimensions,
+} from '../src/shared/correction-constants'
+import {
   blurRadiusPixels,
   normalizeRx,
 } from '../src/renderer/lib/optics/prescription'
@@ -35,6 +39,21 @@ function testGaussianNormalization(): void {
   approx(sum(kernel), 1, 1e-12)
   assert.ok(kernel.every(Number.isFinite))
   assert.ok(kernel.every((value) => value >= 0))
+}
+
+function testGaussianRejectsInvalidInputs(): void {
+  assert.throws(() => computeAnisotropicGaussianKernel({
+    sigmaX: 0,
+    sigmaY: 1,
+    angleDeg: 0,
+    size: 15,
+  }))
+  assert.throws(() => computeAnisotropicGaussianKernel({
+    sigmaX: 1,
+    sigmaY: Number.NaN,
+    angleDeg: 0,
+    size: 15,
+  }))
 }
 
 function testIdentityAndEmmetropicPSF(): void {
@@ -74,6 +93,39 @@ function testDirectionalBlur(): void {
   })
   assert.notEqual(directional.sigmaX, directional.sigmaY)
   assert.equal(directional.angleDeg, 0)
+}
+
+function testLiveKernelSizingContract(): void {
+  const strongRx: EyePrescription = {
+    sphere: -4,
+    cylinder: -2,
+    axis: 35,
+    add: null,
+    pd: 31.5,
+  }
+
+  const live = computePSF(strongRx, { viewingDistanceCm: 60 }, 'OD')
+  assert.equal(live.size, LIVE_CORRECTION_KERNEL_SIZE)
+  assert.equal(live.kernelData.length, LIVE_CORRECTION_KERNEL_SIZE ** 2)
+
+  const experimental = computePSF(
+    strongRx,
+    { viewingDistanceCm: 60, kernelSize: 31 },
+    'OD',
+  )
+  assert.equal(experimental.size, 31)
+  assert.equal(experimental.kernelData.length, 31 ** 2)
+}
+
+function testLiveKernelValidation(): void {
+  validateLiveKernelDimensions(225, 15)
+  validateLiveKernelDimensions(49, 7)
+  validateLiveKernelDimensions(0, 0)
+
+  assert.throws(() => validateLiveKernelDimensions(961, 31))
+  assert.throws(() => validateLiveKernelDimensions(64, 8))
+  assert.throws(() => validateLiveKernelDimensions(224, 15))
+  assert.throws(() => validateLiveKernelDimensions(1, 0))
 }
 
 function testPrescriptionNormalization(): void {
@@ -147,8 +199,11 @@ function testGazeSmoother(): void {
 
 const tests: Array<[string, () => void]> = [
   ['Gaussian kernel normalization', testGaussianNormalization],
+  ['Gaussian input guards', testGaussianRejectsInvalidInputs],
   ['Identity and emmetropic PSF', testIdentityAndEmmetropicPSF],
   ['Directional blur response', testDirectionalBlur],
+  ['Live kernel sizing contract', testLiveKernelSizingContract],
+  ['Live kernel boundary validation', testLiveKernelValidation],
   ['Prescription normalization', testPrescriptionNormalization],
   ['Single strength application', testCorrectionKernelStrengthSemantics],
   ['Gaze smoother stability', testGazeSmoother],
@@ -159,4 +214,4 @@ for (const [name, test] of tests) {
   console.log(`PASS ${name}`)
 }
 
-console.log(`Verified ${tests.length} numerical invariants.`)
+console.log(`Verified ${tests.length} numerical and renderer invariants.`)

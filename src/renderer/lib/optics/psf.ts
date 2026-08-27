@@ -1,4 +1,5 @@
 import type { EyePrescription, PSFKernel, CorrectionKernel, EyeSide } from '../types/prescription'
+import { LIVE_CORRECTION_KERNEL_SIZE } from '../../../shared/correction-constants'
 import { blurRadiusPixels } from './prescription'
 
 // ---------------------------------------------------------------------------
@@ -17,6 +18,8 @@ export interface CorrectionOptions {
   /** Backward-compatible input. Runtime strength is applied by the shader. */
   strength?: number
 }
+
+const MAX_EXPERIMENTAL_KERNEL_SIZE = 31
 
 // ---------------------------------------------------------------------------
 // 1. Anisotropic rotated elliptical Gaussian kernel
@@ -41,7 +44,15 @@ export function computeAnisotropicGaussianKernel(params: {
 }): number[] {
   const { sigmaX, sigmaY, angleDeg, size } = params
 
-  const n = Math.max(1, size % 2 === 0 ? size + 1 : size)
+  if (![sigmaX, sigmaY, angleDeg, size].every(Number.isFinite)) {
+    throw new Error('Gaussian kernel parameters must be finite')
+  }
+  if (sigmaX <= 0 || sigmaY <= 0) {
+    throw new Error('Gaussian kernel sigma values must be positive')
+  }
+
+  const requested = Math.max(1, Math.floor(size))
+  const n = requested % 2 === 0 ? requested + 1 : requested
   const half = Math.floor(n / 2)
   const theta = (angleDeg * Math.PI) / 180
 
@@ -84,8 +95,9 @@ export function computeAnisotropicGaussianKernel(params: {
  * viewing conditions.
  *
  * If the eye is emmetropic, return an identity kernel so downstream convolution
- * is a no-op. Kernel size is derived from the largest sigma and clamped to a
- * practical real-time range unless the caller provides an explicit size.
+ * is a no-op. Automatic sizing is capped at the live renderer's shared 15 x 15
+ * contract. Callers may request a larger odd kernel explicitly for offline or
+ * experimental numerical work, up to 31 x 31.
  *
  * The Gaussian PSF is a pragmatic engineering approximation rather than a
  * clinically calibrated wavefront model.
@@ -107,7 +119,7 @@ export function computePSF(
     (rx.cylinder === null || Math.abs(rx.cylinder) < 0.125)
 
   if (isEmmetropic) {
-    const size = kernelSize ?? 7
+    const size = normalizeRequestedKernelSize(kernelSize ?? 7)
     return {
       kernelData: getIdentityKernel(size),
       size,
@@ -128,7 +140,8 @@ export function computePSF(
   })
 
   const autoSize = 2 * Math.ceil(3 * Math.max(sigmaX, sigmaY)) + 1
-  const size = kernelSize ?? Math.min(31, Math.max(7, autoSize))
+  const requestedSize = kernelSize ?? Math.min(LIVE_CORRECTION_KERNEL_SIZE, Math.max(7, autoSize))
+  const size = normalizeRequestedKernelSize(requestedSize)
 
   const kernelData = computeAnisotropicGaussianKernel({ sigmaX, sigmaY, angleDeg, size })
 
@@ -140,6 +153,13 @@ export function computePSF(
     angle: (angleDeg * Math.PI) / 180,
     eye
   }
+}
+
+function normalizeRequestedKernelSize(size: number): number {
+  if (!Number.isFinite(size)) throw new Error('Kernel size must be finite')
+  const integer = Math.max(1, Math.floor(size))
+  const odd = integer % 2 === 0 ? integer + 1 : integer
+  return Math.min(MAX_EXPERIMENTAL_KERNEL_SIZE, odd)
 }
 
 // ---------------------------------------------------------------------------

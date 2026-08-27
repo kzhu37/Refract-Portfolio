@@ -1,3 +1,4 @@
+import { validateLiveKernelDimensions } from '../../../shared/correction-constants';
 import { CORRECTION_VERT_SOURCE, CORRECTION_FRAG_SOURCE } from './correction-shader';
 
 // Fullscreen quad: two CCW triangles covering NDC -1..+1, UV 0..1
@@ -46,10 +47,10 @@ export class CorrectionRenderer {
     gl.bufferData(gl.ARRAY_BUFFER, QUAD_VERTICES, gl.STATIC_DRAW);
 
     const stride = 4 * Float32Array.BYTES_PER_ELEMENT;
-    // a_position  - location 0, vec2
+    // a_position: location 0, vec2
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, stride, 0);
-    // a_texCoord  - location 1, vec2
+    // a_texCoord: location 1, vec2
     gl.enableVertexAttribArray(1);
     gl.vertexAttribPointer(1, 2, gl.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
 
@@ -71,7 +72,6 @@ export class CorrectionRenderer {
       'u_blendRadius',
       'u_strength',
       'u_enabled',
-      'u_zoom',
     ] as const;
 
     for (const name of uniformNames) {
@@ -87,8 +87,7 @@ export class CorrectionRenderer {
     const { gl } = this;
     gl.bindTexture(gl.TEXTURE_2D, this.inputTexture);
     // Capture frames are top-row-first; WebGL texture origin is bottom-left.
-    // Flip on upload so the image isn't drawn upside down (taskbar at top,
-    // flipped ghost layer over the real desktop).
+    // Flip on upload so the image is not drawn upside down.
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
     gl.bindTexture(gl.TEXTURE_2D, null);
@@ -103,11 +102,13 @@ export class CorrectionRenderer {
   }
 
   setKernel(kernelData: Float32Array, kernelSize: number): void {
+    validateLiveKernelDimensions(kernelData.length, kernelSize);
+
     const { gl } = this;
     const kernelLoc = this.uniformLocations.get('u_kernel');
     const sizeLoc = this.uniformLocations.get('u_kernelSize');
-    if (kernelLoc) gl.uniform1fv(kernelLoc, kernelData);
-    if (sizeLoc)   gl.uniform1i(sizeLoc, kernelSize);
+    if (kernelLoc && kernelData.length > 0) gl.uniform1fv(kernelLoc, kernelData);
+    if (sizeLoc) gl.uniform1i(sizeLoc, kernelSize);
   }
 
   setGazePoint(x: number, y: number): void {
@@ -125,16 +126,11 @@ export class CorrectionRenderer {
     if (loc) this.gl.uniform1i(loc, enabled ? 1 : 0);
   }
 
-  setZoom(zoom: number): void {
-    const loc = this.uniformLocations.get('u_zoom');
-    if (loc) this.gl.uniform1f(loc, zoom);
-  }
-
   setFovealParams(fovealRadius: number, blendRadius: number): void {
     const { gl } = this;
-    const fovLoc    = this.uniformLocations.get('u_fovealRadius');
-    const blendLoc  = this.uniformLocations.get('u_blendRadius');
-    if (fovLoc)   gl.uniform1f(fovLoc, fovealRadius);
+    const fovLoc = this.uniformLocations.get('u_fovealRadius');
+    const blendLoc = this.uniformLocations.get('u_blendRadius');
+    if (fovLoc) gl.uniform1f(fovLoc, fovealRadius);
     if (blendLoc) gl.uniform1f(blendLoc, blendRadius);
   }
 
@@ -144,9 +140,9 @@ export class CorrectionRenderer {
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.useProgram(this.program);
 
-    const resLoc   = this.uniformLocations.get('u_resolution');
+    const resLoc = this.uniformLocations.get('u_resolution');
     const imageLoc = this.uniformLocations.get('u_image');
-    if (resLoc)   gl.uniform2f(resLoc, canvas.width, canvas.height);
+    if (resLoc) gl.uniform2f(resLoc, canvas.width, canvas.height);
     if (imageLoc) gl.uniform1i(imageLoc, 0);
 
     gl.activeTexture(gl.TEXTURE0);
@@ -166,8 +162,8 @@ export class CorrectionRenderer {
   destroy(): void {
     const { gl } = this;
     if (this.inputTexture) gl.deleteTexture(this.inputTexture);
-    if (this.vao)          gl.deleteVertexArray(this.vao);
-    if (this.program)      gl.deleteProgram(this.program);
+    if (this.vao) gl.deleteVertexArray(this.vao);
+    if (this.program) gl.deleteProgram(this.program);
     this.inputTexture = null;
     this.vao = null;
     this.program = null;
@@ -195,7 +191,6 @@ export function compileShader(
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     const log = gl.getShaderInfoLog(shader) ?? '(no info log)';
     gl.deleteShader(shader);
-    // Annotate the error with the offending source lines for easier debugging
     const annotated = annotateShaderError(source, log);
     throw new Error(`Shader compile error:\n${log}\n${annotated}`);
   }
@@ -233,15 +228,24 @@ export function createTexture(gl: WebGL2RenderingContext): WebGLTexture {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  // Allocate a 1×1 transparent pixel so the texture is valid before first upload
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
-    new Uint8Array([0, 0, 0, 0]));
+  // Allocate a 1 x 1 transparent pixel so the texture is valid before first upload.
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.RGBA,
+    1,
+    1,
+    0,
+    gl.RGBA,
+    gl.UNSIGNED_BYTE,
+    new Uint8Array([0, 0, 0, 0]),
+  );
   gl.bindTexture(gl.TEXTURE_2D, null);
 
   return texture;
 }
 
-// Attaches line-numbered source context around each error line reported by the driver
+// Attach line-numbered source context around each error line reported by the driver.
 function annotateShaderError(source: string, log: string): string {
   const lines = source.split('\n');
   const errorLineRe = /ERROR:\s*\d+:(\d+)/g;
@@ -254,7 +258,7 @@ function annotateShaderError(source: string, log: string): string {
   return [...errorLines]
     .flatMap((ln) => {
       const start = Math.max(1, ln - 2);
-      const end   = Math.min(lines.length, ln + 2);
+      const end = Math.min(lines.length, ln + 2);
       return lines.slice(start - 1, end).map((l, i) => {
         const n = start + i;
         return `${n === ln ? '>>>' : '   '} ${String(n).padStart(4)} | ${l}`;
