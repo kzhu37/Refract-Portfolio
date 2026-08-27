@@ -95,6 +95,20 @@ function testDirectionalBlur(): void {
   assert.equal(directional.angleDeg, 0)
 }
 
+function testBlurModelRejectsInvalidPhysicalInputs(): void {
+  const base = {
+    sphere: -2,
+    cylinder: null,
+    viewingDistanceCm: 60,
+    screenPPM: 3780,
+  }
+
+  assert.throws(() => blurRadiusPixels({ ...base, viewingDistanceCm: 0 }))
+  assert.throws(() => blurRadiusPixels({ ...base, screenPPM: -1 }))
+  assert.throws(() => blurRadiusPixels({ ...base, pupilDiameterMm: Number.NaN }))
+  assert.throws(() => blurRadiusPixels({ ...base, cylinder: Number.POSITIVE_INFINITY }))
+}
+
 function testLiveKernelSizingContract(): void {
   const strongRx: EyePrescription = {
     sphere: -4,
@@ -202,6 +216,7 @@ const tests: Array<[string, () => void]> = [
   ['Gaussian input guards', testGaussianRejectsInvalidInputs],
   ['Identity and emmetropic PSF', testIdentityAndEmmetropicPSF],
   ['Directional blur response', testDirectionalBlur],
+  ['Blur-model physical input guards', testBlurModelRejectsInvalidPhysicalInputs],
   ['Live kernel sizing contract', testLiveKernelSizingContract],
   ['Live kernel boundary validation', testLiveKernelValidation],
   ['Prescription normalization', testPrescriptionNormalization],
