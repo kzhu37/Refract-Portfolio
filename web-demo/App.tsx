@@ -12,6 +12,7 @@ import {
 import { CorrectionRenderer } from '../src/overlay/lib/webgl/webgl-utils'
 import { computeCorrectionKernel, computePSF } from '../src/renderer/lib/optics/psf'
 import type { CorrectionKernel, EyePrescription, PSFKernel } from '../src/renderer/lib/types/prescription'
+import { LIVE_CORRECTION_KERNEL_SIZE } from '../src/shared/correction-constants'
 import { drawDemoScene } from './demo-scene'
 
 type TrackingMode = 'cursor' | 'eye'
@@ -57,7 +58,6 @@ const PRESETS: Array<{ name: string; short: string; settings: Pick<DemoSettings,
 ]
 
 const SCREEN_PPM_96_DPI = 3780
-const KERNEL_SIZE = 15
 const BLEND_RADIUS_RATIO = 1.2
 
 function BrandMark(): JSX.Element {
@@ -249,7 +249,6 @@ function CorrectionStage({
           current.settings.radius * scaleX * BLEND_RADIUS_RATIO,
         )
         renderer.setStrength(current.settings.strength)
-        renderer.setZoom(0.12)
         renderer.render()
       } catch (error) {
         failed = true
@@ -328,7 +327,7 @@ export function App(): JSX.Element {
           viewingDistanceCm: settings.viewingDistance,
           screenPPM: SCREEN_PPM_96_DPI,
           pupilDiameterMm: 4,
-          kernelSize: KERNEL_SIZE,
+          kernelSize: LIVE_CORRECTION_KERNEL_SIZE,
         },
         'OD',
       ),
@@ -348,7 +347,7 @@ export function App(): JSX.Element {
 
   const handleWebGLStatus = useCallback((status: WebGLStatus, message?: string): void => {
     setWebglStatus(status)
-    if (status === 'ready') setWebglMessage('Real WebGL2 correction pipeline ready')
+    if (status === 'ready') setWebglMessage('Shared WebGL2 correction pipeline ready')
     else if (message) setWebglMessage(message)
   }, [])
 
@@ -458,7 +457,7 @@ export function App(): JSX.Element {
             <p className="eyebrow">Computational optics · gaze-aware rendering</p>
             <h1 id="hero-title">See Refract’s correction pipeline work in your browser.</h1>
             <p className="hero-description">
-              Move across the detail workspace to drive a localized correction region. Prescription values become a directional point-spread function, then Refract’s real WebGL2 shader applies the active correction kernel in real time.
+              Move across the detail workspace to drive a localized correction region. Prescription values become a directional point-spread function, then Refract’s shared WebGL2 shader applies the active correction kernel in real time without mixing magnification into the effect.
             </p>
           </div>
           <div className="scope-banner" role="note">
