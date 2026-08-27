@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://refract-portfolio-xiangseanzhu-7370.vercel.app"><strong>Try Browser Demo →</strong></a>
+  <a href="https://refract-portfolio.vercel.app"><strong>Try Browser Demo →</strong></a>
 </p>
 
 > **Browser demo note:** The live Refract demo is a browser-scoped adaptation of the desktop prototype. It reuses the project's browser-compatible optics, gaze-tracking, and real-time WebGL correction code on content rendered within the demo page, with browser-appropriate physical-model controls and a 96-DPI fallback. Unlike the full Electron application, it cannot capture arbitrary desktop content or place Refract's transparent correction overlay above other applications, so correction is intentionally limited to the demonstration environment.
