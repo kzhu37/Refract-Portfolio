@@ -28,17 +28,34 @@ jobs:
         run: |
           node <<'NODE'
           const fs = require('fs')
-          const readme = fs.readFileSync('README.md', 'utf8')
+          const path = require('path')
 
+          const readme = fs.readFileSync('README.md', 'utf8')
           const forbidden = [
             ['em dash', '\u2014'],
             ['en dash', '\u2013']
           ]
 
-          for (const [label, character] of forbidden) {
-            if (readme.includes(character)) {
-              console.error(`README contains a forbidden ${label}`)
-              process.exit(1)
+          const publicFiles = ['README.md']
+          const collect = (dir, extensions) => {
+            if (!fs.existsSync(dir)) return
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const full = path.join(dir, entry.name)
+              if (entry.isDirectory()) collect(full, extensions)
+              else if (extensions.has(path.extname(entry.name))) publicFiles.push(full)
+            }
+          }
+
+          collect('docs/media', new Set(['.svg']))
+          collect('web-demo', new Set(['.ts', '.tsx', '.css', '.html']))
+
+          for (const file of [...new Set(publicFiles)]) {
+            const text = fs.readFileSync(file, 'utf8')
+            for (const [label, character] of forbidden) {
+              if (text.includes(character)) {
+                console.error(`${file} contains a forbidden ${label}`)
+                process.exit(1)
+              }
             }
           }
 
@@ -48,14 +65,19 @@ jobs:
           }
 
           const media = [...new Set(readme.match(/docs\/media\/[A-Za-z0-9._/-]+/g) || [])]
-          const missing = media.filter((path) => !fs.existsSync(path))
-
+          const missing = media.filter((file) => !fs.existsSync(file))
           if (missing.length) {
             console.error(`README references missing media:\n${missing.join('\n')}`)
             process.exit(1)
           }
 
-          console.log(`Portfolio presentation check passed for ${media.length} media references`)
+          const shader = fs.readFileSync('src/overlay/lib/webgl/correction-shader.ts', 'utf8')
+          if (shader.includes('u_zoom')) {
+            console.error('Correction shader still contains magnification state')
+            process.exit(1)
+          }
+
+          console.log(`Portfolio presentation check passed for ${media.length} media references and ${publicFiles.length} public text files`)
           NODE
 
       - name: Install dependencies
