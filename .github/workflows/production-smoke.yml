@@ -68,6 +68,7 @@ jobs:
           from selenium.common.exceptions import TimeoutException
           from selenium.webdriver.common.action_chains import ActionChains
           from selenium.webdriver.common.by import By
+          from selenium.webdriver.common.keys import Keys
           from selenium.webdriver.support.ui import WebDriverWait
           from selenium.webdriver.support import expected_conditions as EC
 
@@ -178,14 +179,15 @@ jobs:
               camera.get(URL)
               ready(camera)
               camera_wait = WebDriverWait(camera, 10)
-              camera_choice = camera_wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]")))
-              camera.execute_script("arguments[0].scrollIntoView({block:'center',inline:'center'});", camera_choice)
-              camera_choice.click()
+              camera_choice = camera_wait.until(EC.presence_of_element_located((By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]")))
+              assert camera_choice.is_displayed() and camera_choice.is_enabled()
+              camera.execute_script("arguments[0].focus();", camera_choice)
+              camera_choice.send_keys(Keys.ENTER)
               consent = camera_wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '.camera-consent')))
               assert 'Before the browser asks' in consent.text
               continue_button = camera_wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Continue to camera')]")))
               assert continue_button.is_displayed() and continue_button.is_enabled()
-              print('camera consent path: ok')
+              print('camera consent keyboard path: ok')
           finally:
               camera.quit()
 
