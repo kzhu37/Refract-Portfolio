@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>An experimental adaptive-display prototype that combines computational optics, gaze tracking, and real-time GPU rendering.</strong>
+  <strong>An experimental adaptive-display prototype combining computational optics, gaze tracking, physical calibration, and real-time GPU rendering.</strong>
 </p>
 
 <p align="center">
@@ -11,35 +11,47 @@
 </p>
 
 <p align="center">
-  <a href="https://refract-portfolio.vercel.app"><strong>Try Browser Demo →</strong></a>
+  <a href="https://refract-portfolio.vercel.app"><strong>Try the interactive browser demo</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#system-architecture"><strong>Explore the engineering</strong></a>
 </p>
-
-> **Browser demo note:** The live Refract demo is a browser-scoped adaptation of the desktop prototype. It reuses the project's browser-compatible optics, gaze-tracking, and real-time WebGL correction code on content rendered within the demo page, with browser-appropriate physical-model controls and a 96-DPI fallback. Unlike the full Electron application, it cannot capture arbitrary desktop content or place Refract's transparent correction overlay above other applications, so correction is intentionally limited to the demonstration environment.
->
-> Optional camera gaze is a streamlined browser mode; the desktop prototype retains the full 3 × 3 gaze calibration, physical screen calibration, desktop capture, and transparent system-level overlay.
 
 Refract explores a simple question: **what if the screen could adapt to the user's vision instead of making the user adapt to the screen?**
 
-The desktop application captures the display, models an approximate refractive blur from prescription and calibration parameters, tracks the user's gaze or cursor, and applies localized GPU-accelerated correction around the point of attention. The result is a working engineering prototype where optics, computer vision, numerical calibration, desktop systems, physical setup, and human comfort all have to operate in one loop.
+The desktop prototype captures display content, builds an approximate refractive-blur model from prescription and physical calibration parameters, follows the user's cursor or gaze, and applies localized GPU correction around the point of attention. The project became a systems problem spanning optics, numerical methods, computer vision, desktop capture, WebGL, physical geometry, and human comfort.
 
-<p align="center">
-  <img src="docs/media/refract-home.png" alt="Refract desktop application home screen with correction status, prescription values, and controls" width="100%">
-</p>
+## See the correction pipeline work
 
-<p align="center">
-  <sub>Current Refract desktop interface. The application separates its control UI from a transparent correction overlay that can operate above other desktop content.</sub>
-</p>
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/media/browser-demo-original.webp" alt="Refract browser demo with correction disabled and the original detail workspace visible">
+    </td>
+    <td width="50%">
+      <img src="docs/media/browser-demo-correction.webp" alt="Refract browser demo with the real WebGL2 correction pipeline active around the cursor focal region">
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><sub><strong>Original:</strong> correction disabled.</sub></td>
+    <td align="center"><sub><strong>Correction active:</strong> the shared optics and WebGL2 path processes a localized focal region.</sub></td>
+  </tr>
+</table>
+
+These images were captured from the deployed browser demo after its WebGL2 renderer reported ready. The demo reuses the project's browser-compatible PSF generation, correction-kernel generation, and WebGL renderer rather than substituting a static visual effect.
+
+> **Browser demo scope:** A browser cannot capture arbitrary desktop content or place Refract's transparent overlay above other applications. The live demo therefore applies the same browser-compatible correction path to content inside the page. Cursor tracking works immediately, while camera gaze is optional. The full Electron prototype retains system-level desktop capture, a protected transparent overlay, physical screen calibration, and the full 3 x 3 gaze-calibration flow.
 
 ## At a glance
 
-| Area | Refract |
+| Area | Current prototype |
 | --- | --- |
 | **Core idea** | Preprocess display content so the screen can partially compensate for modeled visual blur |
-| **Technical centerpiece** | A gaze-aware, click-through WebGL2 overlay that processes a live desktop capture around the point of attention |
-| **Optics** | Prescription and physical calibration values become a rotated anisotropic Gaussian point spread function and correction kernel |
-| **Tracking** | MediaPipe iris landmarks, custom eye-relative features, polynomial calibration, validation, and Kalman smoothing |
-| **Project type** | Collaborative experimental engineering prototype, later refined and documented in this public repository |
-| **Current status** | Functional proof of concept with explicit limitations, not a clinical or medical system |
+| **Technical centerpiece** | A gaze-aware or cursor-aware WebGL2 correction region rendered through a transparent, click-through Electron overlay |
+| **Optical model** | Sphere, cylinder, axis, viewing distance, screen scale, and pupil assumptions become a rotated anisotropic Gaussian point spread function |
+| **Tracking** | MediaPipe iris landmarks, eye-relative features, polynomial screen calibration, validation, and Kalman smoothing |
+| **Desktop systems** | Screen capture, protected overlay, IPC, tray controls, global shortcuts, persistence, and cross-platform packaging |
+| **Verification** | Focused numerical tests, TypeScript checks, desktop and browser builds, plus automated smoke checks against the deployed browser demo |
+| **Project type** | Collaborative experimental engineering prototype with later public refinement, documentation, and browser adaptation |
 
 <p align="center">
   <a href="#why-refract">Why</a> ·
@@ -48,45 +60,47 @@ The desktop application captures the display, models an approximate refractive b
   <a href="#gaze-tracking-and-calibration">Gaze</a> ·
   <a href="#modeling-refractive-blur">Optics</a> ·
   <a href="#testing-changed-the-product">Testing</a> ·
+  <a href="#verification">Verification</a> ·
   <a href="#run-refract-locally">Run locally</a>
 </p>
 
 > [!IMPORTANT]
-> **Refract is an experimental research and engineering prototype.** It is not a medical device, a clinical diagnostic tool, or a replacement for glasses, contact lenses, professional eye examinations, or other vision care. The guided vision workflow produces heuristic estimates only.
+> **Refract is an experimental research and engineering prototype.** It is not a medical device, a clinical diagnostic tool, or a replacement for glasses, contact lenses, professional eye examinations, or other vision care. The guided workflow produces heuristic estimates only.
 
 ## Why Refract
 
-Glasses correct light after it leaves a display. Refract investigates the inverse idea: whether the image on the display can be preprocessed so that some of the user's modeled optical blur is partially compensated before the image reaches the eye.
+Glasses correct light after it leaves a display. Refract investigates the inverse idea: whether displayed content can be preprocessed so that some modeled optical blur is partially compensated before the image reaches the eye.
 
-That question quickly became more than an image-filtering problem. A useful prototype also had to understand physical screen scale and viewing distance, convert prescription values into a directional blur model, follow where the user is looking, modify arbitrary desktop content with low latency, avoid recursive screen capture, control visual artifacts, and remain comfortable enough to test.
+That question quickly became more than an image-filtering problem. A useful prototype also had to connect pixels to physical screen dimensions, account for viewing distance, translate prescription values into directional blur, follow a point of attention, process continuously changing desktop content, prevent the output from feeding back into the next captured frame, control artifacts, and remain comfortable enough to test.
 
-This makes Refract different from a conventional application UI. Its main engineering problem is **integration across physical and computational systems**:
+The challenge was therefore **integration across physical and computational systems**:
 
-- **Computational optics:** translate sphere, cylinder, axis, pupil size, viewing distance, and screen scale into an approximate point spread function.
+- **Computational optics:** convert refractive and physical parameters into an approximate point spread function.
 - **Computer vision:** estimate gaze from webcam iris landmarks and calibrate those measurements to screen coordinates.
-- **Numerical methods:** fit screen mappings, smooth noisy measurements, and generate bounded correction kernels.
-- **GPU graphics:** perform localized convolution on a continuously updated desktop texture with WebGL2 and GLSL.
-- **Desktop engineering:** coordinate Electron windows, screen capture, IPC, persistence, tray controls, shortcuts, and packaging.
-- **Human-centered iteration:** treat comprehension, reversibility, setup conditions, and visual comfort as engineering constraints rather than presentation details.
+- **Numerical methods:** fit screen mappings, condition noisy data, smooth predictions, and generate bounded kernels.
+- **GPU graphics:** run localized convolution on a continuously updated texture with WebGL2 and GLSL.
+- **Desktop engineering:** coordinate Electron windows, capture, IPC, persistence, tray controls, shortcuts, and packaging.
+- **Human-centered iteration:** treat comprehension, reversibility, setup conditions, and visual comfort as engineering constraints.
 
 ## My contribution and collaboration
 
-Refract was developed collaboratively by Vlad Duckardt and me. My work centered on product direction, user testing and interpretation, feedback-driven UX decisions, later interface and desktop engineering, and documenting the finished system.
+Refract was developed collaboratively by Vlad Duckardt and me. I keep that boundary explicit because the project is strongest when the engineering work and the collaboration are both represented accurately.
 
-| Area | My contribution |
+| Area | My role |
 | --- | --- |
-| **Product direction** | Helped frame Refract around adaptive display comfort and a human problem rather than only a technology demonstration |
-| **Testing and iteration** | Helped organize testing, interpret recurring friction, and turn feedback about calibration, reversibility, before/after comparison, and correction strength into product changes |
-| **Interface engineering** | Completed a substantial later refactor across typography, spacing, responsive behavior, accessibility semantics, page structure, OD/OS help graphics, and Refract branding |
-| **Desktop polish** | Added the Refract app and tray icon system, icon-generation tooling, and Windows packaging support |
-| **Public repository and documentation** | Migrated and cleaned the working application for public release, added CI checks, documented active versus experimental techniques, and built the diagrams and technical walkthrough in this repository |
+| **Product direction and evaluation** | Helped frame the project around adaptive-display comfort, organized and interpreted exploratory user testing, and translated recurring feedback into clearer product criteria |
+| **Feedback-driven iteration** | Helped move before/after comparison earlier, make reset and reversibility more visible, reduce overly aggressive defaults, and treat physical viewing conditions as system variables |
+| **Interface and accessibility engineering** | Completed a substantial later application-wide refinement covering typography, spacing, responsive layout, navigation, accessibility semantics, help graphics, and Refract branding |
+| **Desktop productization** | Added the Refract app and tray icon system, icon-generation tooling, and Windows packaging support |
+| **Public engineering work** | Prepared the public repository, refined the browser adaptation, added diagrams and technical documentation, aligned visible controls with actual runtime behavior, and added automated numerical and production verification |
+| **Core prototype** | Developed collaboratively. The original development history remains linked below rather than being presented as solo work |
 
-Two source-history commits show some of that later engineering work directly:
+Two source-history commits show parts of my later engineering work directly:
 
-- [`11e9c9c`](https://github.com/VDuckardtt/refract/commit/11e9c9ccb8aee09c7aac5ceb3ed13c75cf4eb80b): interface, responsive layout, accessibility, typography, help graphics, and branding refinement
+- [`11e9c9c`](https://github.com/VDuckardtt/refract/commit/11e9c9ccb8aee09c7aac5ceb3ed13c75cf4eb80b): interface structure, responsive behavior, accessibility, typography, help graphics, and branding refinement
 - [`0fa3a54`](https://github.com/VDuckardtt/refract/commit/0fa3a54b1e7a5d66fe540837c7b16addb130a860): application and tray icons, icon-generation tooling, and Windows packaging support
 
-The earlier development history remains in the [collaborative source repository](https://github.com/VDuckardtt/refract). I created this repository later as a cleaned-up public version of the working project with its browser demo, documentation, and continued refinements.
+The earlier collaborative history remains in the [original source repository](https://github.com/VDuckardtt/refract). This repository is the cleaned public version, including later refinements, the browser demo, technical documentation, and verification work.
 
 ## System architecture
 
@@ -94,21 +108,21 @@ The earlier development history remains in the [collaborative source repository]
   <img src="docs/media/architecture.svg" alt="Refract system architecture from prescription and calibration through optics, tracking, desktop capture, GPU correction, and transparent overlay" width="100%">
 </p>
 
-Refract separates the application interface from the high-frequency correction layer because they have different performance and interaction requirements.
+Refract separates its application interface from the high-frequency correction layer because they have different performance and interaction requirements.
 
-- The **React renderer** handles prescription input, calibration, guided vision screens, settings, and user controls.
-- The **Electron main process** owns windows, persistence, screen-capture coordination, tray behavior, shortcuts, and IPC.
+- The **React renderer** handles prescription input, calibration, the guided workflow, settings, and user controls.
+- The **Electron main process** owns windows, screen-capture coordination, persistence, tray behavior, global shortcuts, and IPC.
 - The **overlay renderer** receives compact correction state and runs a WebGL render loop without forcing React component re-renders.
-- The **computer-vision pipeline** produces gaze and distance estimates.
+- The **tracking pipeline** supplies a cursor position or calibrated gaze estimate.
 - The **optics pipeline** converts refractive and physical parameters into PSF and correction kernels that can be serialized through IPC.
 
-A typical path is:
+A typical live path is:
 
 ```text
 prescription + physical calibration
               |
               v
-      approximate optical model
+       approximate optical model
               |
               +----------------------+
               |                      |
@@ -129,21 +143,21 @@ prescription + physical calibration
 
 ### Real-time desktop correction
 
-The correction layer is a separate frameless, transparent, always-on-top Electron window. It is normally non-focusable and click-through, so the corrected region can appear above other applications without intercepting normal mouse interaction.
+The correction layer is a separate frameless, transparent, always-on-top Electron window. It is normally non-focusable and click-through, so the corrected region can appear above other applications without intercepting normal mouse input.
 
-The high-frequency path is implemented in [`CorrectionCanvas.tsx`](src/overlay/CorrectionCanvas.tsx), with the WebGL renderer in [`webgl-utils.ts`](src/overlay/lib/webgl/webgl-utils.ts) and correction logic in [`correction-shader.ts`](src/overlay/lib/webgl/correction-shader.ts).
+The high-frequency path lives in [`CorrectionCanvas.tsx`](src/overlay/CorrectionCanvas.tsx), with the renderer in [`webgl-utils.ts`](src/overlay/lib/webgl/webgl-utils.ts) and shader logic in [`correction-shader.ts`](src/overlay/lib/webgl/correction-shader.ts).
 
-One subtle systems problem appears immediately. If the screen-capture pipeline captures Refract's own overlay, the next frame can contain the previous corrected output. Reprocessing that image creates a recursive feedback loop. Refract therefore uses Electron content protection so the overlay remains visible to the user while being excluded from capture APIs.
+One subtle systems problem appears immediately. If screen capture includes Refract's own overlay, the next frame can contain the previous corrected output. Reprocessing that output creates a recursive feedback loop. Refract therefore uses Electron content protection so the overlay stays visible to the user while remaining excluded from capture APIs.
 
 The shader also includes perceptual safeguards:
 
 - correction fades smoothly outside the focal region instead of ending at a hard boundary
-- luminance is corrected separately to reduce color fringing
+- processing focuses on luminance while preserving the source chroma to reduce color fringing
 - a brightness floor limits darkening from negative kernel sidelobes
 - pixels outside the active region remain transparent, leaving the underlying desktop untouched
-- gaze coordinates are validated before use, with a safe fallback when tracking data is unavailable
+- non-finite gaze coordinates are rejected before they can contaminate shader state
 
-The key lesson was that mathematical strength alone was not a sufficient objective. A stronger filter could also produce more ringing, darkening, or visual discomfort.
+The project reinforced an important engineering point: a mathematically stronger filter is not automatically a better human-facing result.
 
 ## Gaze tracking and calibration
 
@@ -151,19 +165,19 @@ The key lesson was that mathematical strength alone was not a sufficient objecti
   <img src="docs/media/gaze-pipeline.svg" alt="Refract gaze pipeline from webcam landmarks through normalization, calibration, regression, smoothing, and screen coordinates" width="100%">
 </p>
 
-MediaPipe Face Mesh provides iris and eye-corner landmarks, but Refract builds the screen mapping around those landmarks rather than treating library output as a finished gaze estimate.
+Cursor tracking is the default because it works immediately and requires no camera. Eye tracking is optional and adds a more difficult calibration problem.
 
-The implementation in [`iris-gaze.ts`](src/renderer/lib/eyetracking/iris-gaze.ts) measures each iris center **relative to the midpoint and width of the eye corners**. This normalized feature reduces sensitivity to head translation and viewing-distance changes compared with regressing directly on raw camera pixels. Features from both eyes are then combined.
+MediaPipe Face Mesh supplies iris and eye-corner landmarks, but Refract does not treat those landmarks as a finished gaze estimate. In [`iris-gaze.ts`](src/renderer/lib/eyetracking/iris-gaze.ts), each iris center is measured **relative to the midpoint and width of its eye corners**. This eye-relative feature reduces sensitivity to head translation and viewing-distance changes compared with regressing directly on raw camera pixels.
 
-Calibration uses a 3 x 3 screen grid. At each point, Refract records the median of several recent frames to reduce the influence of blinks and small involuntary movements. It then fits two degree-2 polynomial mappings, one for horizontal position and one for vertical position, using:
+Desktop calibration uses a 3 x 3 screen grid. At each point, Refract records the median of several recent feature samples to reduce the influence of blinks and small involuntary movements. It then builds second-degree polynomial features:
 
 ```text
 [1, x, y, x^2, xy, y^2]
 ```
 
-The least-squares normal equations are solved with a custom Gauss-Jordan implementation using partial pivoting. Runtime predictions are stabilized by the constant-velocity Kalman smoother in [`gaze-smoother.ts`](src/renderer/lib/eyetracking/gaze-smoother.ts), with additional behavior for rapid gaze changes.
+Separate horizontal and vertical mappings are fitted with least squares. The normal equations are solved by a custom Gauss-Jordan routine with partial pivoting, while feature centering and scaling improve numerical conditioning. Runtime predictions then pass through the constant-velocity Kalman smoother in [`gaze-smoother.ts`](src/renderer/lib/eyetracking/gaze-smoother.ts).
 
-After calibration, validation targets provide a mean pixel-error estimate. That matters because successful model initialization is not the same thing as accurate tracking.
+Four validation targets sit outside the 3 x 3 calibration grid and produce a mean pixel-error estimate. That distinction matters because successful model initialization is not evidence that the mapping is accurate.
 
 ## Modeling refractive blur
 
@@ -171,35 +185,35 @@ After calibration, validation targets provide a mean pixel-error estimate. That 
   <img src="docs/media/optics-pipeline.svg" alt="Refract computational optics pipeline from prescription values to point spread function and localized GPU correction" width="100%">
 </p>
 
-The active optical model is deliberately pragmatic. Refract converts prescription and calibration values into blur radii in screen pixels using viewing distance, screen pixel density, and pupil diameter. Sphere contributes the base blur, while cylinder and axis make the model directional. The result is a **rotated anisotropic Gaussian point spread function (PSF)**.
+The active optical model is deliberately pragmatic. Refract converts prescription and calibration values into blur radii in screen pixels using viewing distance, screen pixel density, and pupil assumptions. Sphere contributes the base blur, while cylinder and axis create directional behavior. The result is a **rotated anisotropic Gaussian point spread function (PSF)**.
 
-The prescription conversion is implemented in [`prescription.ts`](src/renderer/lib/optics/prescription.ts), while PSF and kernel generation live in [`psf.ts`](src/renderer/lib/optics/psf.ts).
+Prescription conversion is implemented in [`prescription.ts`](src/renderer/lib/optics/prescription.ts), while PSF and live correction-kernel generation live in [`psf.ts`](src/renderer/lib/optics/psf.ts).
 
-For each kernel sample, Refract rotates the pixel offset into the PSF's principal-axis coordinate system and evaluates a 2D Gaussian. The kernel is normalized to preserve energy and bounded so it remains practical for real-time use.
+For each PSF sample, Refract rotates the pixel offset into the kernel's principal-axis coordinate system, evaluates a 2D Gaussian, and normalizes the result. Kernel dimensions remain bounded so the live path stays practical.
 
-The active live route derives a normalized unsharp kernel:
+### One clear meaning for correction strength
+
+The live route now generates one full-strength spatial unsharp kernel:
 
 ```text
-correction = (1 + strength) * identity - strength * PSF
+K = 2I - PSF
 ```
 
-This is an approximation, not a claim of clinical optical inversion. It proved easier to keep responsive and visually stable than more aggressive inverse filtering.
+The WebGL shader then owns the single user-facing strength blend between the original and corrected luminance. Keeping strength out of cached kernel generation avoids stale kernel state when the slider changes and makes the control mathematically unambiguous.
 
 ### Experimental Wiener inversion
 
-The codebase also contains an experimental frequency-domain Wiener deconvolution implementation in [`wiener.ts`](src/renderer/lib/optics/wiener.ts). It zero-pads and shifts the PSF, performs a custom separable 2D discrete Fourier transform, applies the regularized inverse
+The codebase also contains a separate frequency-domain Wiener experiment in [`wiener.ts`](src/renderer/lib/optics/wiener.ts). It pads and shifts the PSF, performs a custom separable 2D discrete Fourier transform, applies a regularized inverse, and transforms the result back into a spatial kernel:
 
 ```text
 W(u,v) = H*(u,v) / (|H(u,v)|^2 + NSR)
 ```
 
-and transforms the result back into a spatial correction kernel.
+That module is intentionally **not presented as an active runtime control**. Refract also explored higher-order aberration models during research, including Zernike representations, but the current live model remains Gaussian. Experimental techniques, future directions, and active behavior are kept separate so the interface does not imply functionality that the renderer is not using.
 
-This module is an engineering experiment, **not the default live path**. Refract also explored higher-order aberration models during research, including Zernike representations, but the current PSF implementation remains Gaussian. I keep explored techniques, experimental code, and active runtime behavior separate in the documentation so it is clear which ideas are actually part of the live correction path.
+## Guided vision workflow
 
-## Experimental vision workflow
-
-Refract can start from a known prescription, but it also includes an experimental guided workflow for users who do not begin with prescription values. That workflow is a calibration and interaction experiment, not a clinical eye examination.
+Refract can begin from a known prescription, but it also contains an experimental guided workflow for users who do not start with one. This is a calibration and interaction experiment, not a clinical eye examination.
 
 <table>
   <tr>
@@ -207,12 +221,12 @@ Refract can start from a known prescription, but it also includes an experimenta
       <img src="docs/media/refract-prescription.png" alt="Refract prescription editor for OD and OS sphere, cylinder, add, PD, and date values">
     </td>
     <td width="50%">
-      <img src="docs/media/refract-vision-acuity.webp" alt="Refract Snellen-style acuity test with calibrated letter rows and response controls">
+      <img src="docs/media/refract-vision-acuity.webp" alt="Refract Snellen-style acuity screen with calibrated letter rows and response controls">
     </td>
   </tr>
   <tr>
-    <td align="center"><sub>Prescription input keeps OD and OS values explicit and editable.</sub></td>
-    <td align="center"><sub>The guided workflow scales Sloan-style letters using physical screen calibration rather than CSS pixels alone.</sub></td>
+    <td align="center"><sub>Known OD and OS values stay explicit and editable.</sub></td>
+    <td align="center"><sub>Sloan-style letters are scaled from physical screen calibration rather than CSS pixels alone.</sub></td>
   </tr>
 </table>
 
@@ -226,7 +240,17 @@ The workflow includes:
 - **Contrast comparison:** generated Gabor-like patches for exploratory visual comparison.
 - **Results:** a clearly labeled heuristic estimate that can seed correction controls.
 
-Physical calibration became an important engineering constraint. A letter that occupies the same number of CSS pixels can have very different real-world dimensions on two monitors, so screen geometry and viewing conditions are part of the system rather than merely setup instructions.
+Physical calibration became a central engineering constraint. A letter occupying the same number of CSS pixels can have very different real-world dimensions on two monitors, so screen geometry and viewing conditions belong inside the model rather than only in setup instructions.
+
+## How the project developed
+
+| Stage | What changed |
+| --- | --- |
+| **1. Initial question** | Started with the idea of compensating modeled visual blur in displayed content |
+| **2. Systems prototype** | Connected refractive parameters, gaze or cursor tracking, desktop capture, a transparent overlay, and GPU correction |
+| **3. Early testing** | Revealed that technical functionality alone did not make the system understandable, comfortable, or trustworthy |
+| **4. Product iteration** | Moved comparison earlier, made reset and reversibility clearer, reduced aggressive defaults, rewrote calibration guidance, and treated physical conditions as explicit variables |
+| **5. Current public prototype** | Added a browser-scoped interactive demonstration, clearer scope boundaries, truthful runtime controls, numerical tests, deployment checks, and technical documentation |
 
 ## Testing changed the product
 
@@ -234,67 +258,108 @@ Physical calibration became an important engineering constraint. A letter that o
   <img src="docs/media/user-testing.svg" alt="Refract feedback-driven iteration showing changes to calibration language, before and after comparison, reversibility, comfort, and physical setup" width="100%">
 </p>
 
-Refract went through exploratory user testing followed by additional feedback. The most useful outcome was not a headline metric. It was discovering where a technically functioning prototype still failed as an experience.
+Refract went through exploratory user testing followed by additional feedback. The most useful result was not a headline metric. It was discovering where a technically functioning prototype still failed as an experience.
 
 | What users revealed | What changed |
 | --- | --- |
 | Calibration language sounded too technical | Instructions were rewritten as guided setup rather than clinical-sounding procedure |
-| The idea remained abstract until users toggled correction on and off | The before/after comparison moved earlier so the core effect became tangible sooner |
+| The idea remained abstract until users toggled correction on and off | Before/after comparison moved earlier so the core effect became tangible sooner |
 | Some users worried a poor adjustment might leave the screen worse | Reset and reversibility became more visible |
 | Stronger correction could feel harsh or slightly disorienting | Default strength was reduced and comfort became part of the definition of functionality |
 | Results varied with the testing environment | Viewing distance, brightness, room lighting, camera position, and physical screen dimensions became explicit engineering variables |
 
-One glasses-wearing tester described the effect as promising while also making clear that it did not feel equivalent to glasses. That distinction was valuable. It pushed the project away from treating technical sophistication as the same thing as effectiveness and toward clearer limits, better setup, and more useful success criteria.
+One glasses-wearing tester described the effect as promising while also making clear that it did not feel equivalent to glasses. That distinction was useful because it separated technical sophistication from actual effectiveness and pushed the project toward clearer limits, better setup, and more meaningful success criteria.
 
 The testing was exploratory and subjective. It was not controlled clinical validation and cannot establish that Refract can replace corrective lenses.
 
 ## Engineering challenges and decisions
 
-### 1. Preventing recursive capture
+### Preventing recursive capture
 
 **Problem:** a transparent correction layer can accidentally become part of the next desktop frame it processes.
 
-**Decision:** separate correction into its own protected overlay window and exclude that window from capture.
+**Decision:** keep correction in a protected overlay window that remains visible to the user but excluded from capture APIs.
 
-**Lesson:** real-time graphics systems create feedback and timing problems that do not appear in an isolated image-processing prototype.
+**Lesson:** real-time graphics systems create feedback and timing problems that do not appear in an isolated image-processing experiment.
 
-### 2. Stabilizing gaze without specialized hardware
+### Stabilizing gaze without specialized hardware
 
 **Problem:** raw iris positions move with both gaze and head motion, while blinks and small movements add noise.
 
-**Decision:** normalize iris position relative to eye geometry, collect multiple calibration frames, fit a polynomial screen mapping, validate the result, and smooth runtime predictions.
+**Decision:** normalize iris position relative to eye geometry, collect multiple calibration frames, fit a polynomial mapping, validate it on separate targets, and smooth runtime predictions.
 
-**Lesson:** integrating a computer-vision model is only the first step. A usable system needs calibration, numerical conditioning, error handling, validation, and temporal filtering around the model.
+**Lesson:** integrating a computer-vision model is only the first step. A usable system needs calibration, conditioning, error handling, validation, and temporal filtering around that model.
 
-### 3. Balancing correction with visual comfort
+### Balancing correction with visual comfort
 
 **Problem:** aggressive sharpening can create ringing, darkening, color artifacts, or an uncomfortable focal region.
 
 **Decision:** keep the live path conservative, localize correction around attention, blend its edge, preserve chroma, and protect brightness.
 
-**Lesson:** in a human-facing system, perceptual quality is part of technical correctness.
+**Lesson:** perceptual quality is part of technical correctness in a human-facing system.
 
-### 4. Connecting pixels to the physical world
+### Connecting pixels to the physical world
 
-**Problem:** visual tests expressed only in CSS pixels are not physically consistent across monitors or viewing distances.
+**Problem:** visual targets expressed only in CSS pixels are not physically consistent across monitors or viewing distances.
 
 **Decision:** add screen-scale and distance calibration and use those measurements when sizing visual targets and converting modeled blur to pixels.
 
-**Lesson:** when software interacts with perception, environmental conditions belong inside the engineering model.
+**Lesson:** when software interacts with perception, environmental conditions become system inputs.
+
+### Keeping the interface honest
+
+**Problem:** prototype controls can easily suggest that experimental code is part of the active renderer even when it is not wired end to end.
+
+**Decision:** expose only controls that affect live state, keep Wiener inversion labeled as a separate experiment, and route OD or OS explicitly as one selected screen-level optical profile.
+
+**Lesson:** interface accuracy is part of engineering credibility.
+
+## Verification
+
+Refract now verifies both the mathematical building blocks and the public browser experience.
+
+### Numerical checks
+
+`npm test` compiles and runs focused deterministic checks covering:
+
+- anisotropic Gaussian-kernel normalization and finite output
+- identity behavior for an emmetropic prescription
+- directional response when cylinder and axis are present
+- prescription cylinder-form normalization
+- correction-kernel normalization and single strength semantics
+- Kalman gaze-smoother stability and reset behavior
+
+These tests are intentionally small and specific. They target invariants in the numerical code rather than using a coverage percentage as a substitute for meaningful checks.
+
+### Build and production checks
+
+GitHub Actions also:
+
+- type-checks the Node, renderer, and browser-demo targets
+- runs the numerical test suite
+- builds the Electron application
+- builds the isolated browser demo
+- checks the deployed demo for an HTTP 200 response
+- requires WebGL2 initialization in the production browser path
+- verifies that moving the pointer changes the rendered correction output
+- exercises correction toggling, presets, reset behavior, responsive layout, WebGL fallback, camera-consent UI, and deep-link loading
+- fails on severe browser-console errors during the production smoke path
+
+This separates three different questions: whether the math preserves expected invariants, whether the code builds, and whether the deployed interaction actually behaves as intended.
 
 ## Prototype scope and current limitations
 
-Refract is a proof of concept, with several boundaries that still separate it from a validated vision product:
+Refract is a proof of concept, with clear boundaries between the current implementation and a validated vision product:
 
-- the live correction model uses an anisotropic Gaussian PSF, not a clinically calibrated wavefront model
-- the experimental Wiener module exists separately, while the active route uses normalized unsharp correction
-- the application computes separate OD and OS optical state, but the current overlay path still consumes the OD correction kernel
-- the guided Snellen, astigmatism, and contrast stages need more rigorous scoring, integration, and validation before they should be treated as a reliable prescription estimator
-- some advanced settings and adaptive-quality hooks are prototype infrastructure rather than complete user-facing behavior
+- the live optical model uses an anisotropic Gaussian PSF, not a clinically calibrated wavefront model
+- the experimental Wiener module remains separate, while the active route uses normalized unsharp correction
+- the application computes separate OD and OS optical states, but the current screen-level renderer applies one selected eye profile at a time rather than simultaneous binocular per-eye correction
+- the guided acuity, astigmatism, and contrast stages remain heuristic and need more rigorous scoring and validation before they could support reliable prescription estimation
+- adaptive-quality monitoring exists, but automatic resolution adjustment is not yet part of the user-facing behavior
 - MediaPipe runtime assets are currently loaded from a CDN
 - user testing was exploratory and was not performed under controlled clinical conditions
 
-These limitations define where the current prototype ends and where much more rigorous validation would have to begin.
+These limitations define where the prototype ends and where future engineering and validation would have to begin.
 
 ## What I learned
 
@@ -302,11 +367,13 @@ These limitations define where the current prototype ends and where much more ri
 
 **Design the environment, not only the interface.** Viewing distance, brightness, room lighting, camera position, and physical screen dimensions can change the result. In software connected to the physical world, setup conditions become system inputs.
 
-**Define success before collecting feedback.** Early testing mixed several possible meanings of "working," including visible sharpness, comfort, before/after difference, and similarity to corrective lenses. A stronger evaluation would define those criteria before testing.
+**Define success before collecting feedback.** Early testing mixed several possible meanings of "working," including visible sharpness, comfort, before/after difference, and similarity to corrective lenses. A stronger evaluation defines those criteria before testing.
 
-**Technical complexity is not a substitute for clarity.** A shader, deconvolution method, or tracking model can be sophisticated while the product is still confusing. Refract improved when technical decisions and user experience were treated as the same system.
+**Technical complexity is not a substitute for clarity.** A shader, inverse-filtering experiment, or tracking model can be sophisticated while the product remains confusing. Refract improved when technical decisions and user experience were treated as one system.
 
-**Comfort is part of functionality.** More correction was not automatically better correction. The project became stronger when the goal shifted from maximizing an effect to making the effect predictable, reversible, and usable.
+**Comfort is part of functionality.** More correction was not automatically better correction. The project became stronger when the goal shifted from maximizing an effect to making that effect predictable, reversible, and usable.
+
+**Prototype UI still has to tell the truth.** Experimental ideas are valuable, but they should not look like active settings until the runtime actually uses them.
 
 ## Technology
 
@@ -321,17 +388,19 @@ These limitations define where the current prototype ends and where much more ri
 | Computational optics | Directional Gaussian PSFs, normalized unsharp correction, experimental Wiener deconvolution |
 | Desktop integration | IPC, transparent overlay, desktop capture, tray controls, global shortcuts |
 | Packaging | Electron Builder, Windows NSIS, macOS DMG, Linux AppImage |
+| Verification | TypeScript checks, focused numerical tests, GitHub Actions, production browser smoke testing |
 
 ## Run Refract locally
 
 ### Prerequisites
 
-- Node.js and npm
-- A desktop environment supported by Electron
-- A webcam for eye tracking and camera-based distance estimation
-- Screen-capture permission where required by the operating system
+- Node.js 20 or a compatible current Node.js release
+- npm
+- a desktop environment supported by Electron
+- a webcam only if you want to use optional eye tracking or camera-based distance estimation
+- screen-capture permission where required by the operating system
 
-### Development
+### Desktop development
 
 ```bash
 git clone https://github.com/kzhu37/Refract-Portfolio.git
@@ -340,21 +409,24 @@ npm ci
 npm run dev
 ```
 
-For the isolated browser demo target:
+Cursor tracking is the default and does not require a camera. To use eye tracking, select it in the correction controls and complete calibration.
+
+### Browser demo development
 
 ```bash
 npm run dev:web-demo
 ```
 
+The browser target is intentionally scoped to content inside the page. It is not a replacement for the Electron desktop overlay.
+
 ### Verification
 
 ```bash
 npm run typecheck
+npm test
 npm run build
 npm run build:web-demo
 ```
-
-The repository includes GitHub Actions CI that installs dependencies, runs the TypeScript checks, builds the Electron application, and builds the browser demo on pushes and pull requests.
 
 ### Platform packages
 
@@ -364,7 +436,7 @@ npm run build:mac
 npm run build:linux
 ```
 
-Build the target that matches your operating system. Platform-specific packaging can require native tooling and permissions.
+Build the target matching your operating system. Platform-specific packaging can require native tooling and permissions.
 
 ### Global shortcuts
 
@@ -391,27 +463,28 @@ src/
   renderer/
     components/          Calibration, vision, and correction UI
     lib/eyetracking/     Iris tracking, calibration, smoothing
-    lib/optics/          Prescription model, PSF, Wiener experiments
+    lib/optics/          Prescription model, PSF, Wiener experiment
     lib/store/           Renderer state
     pages/               Main application screens
-web-demo/                Interactive browser demo
+web-demo/                Interactive browser adaptation
+tests/                   Focused numerical verification
 docs/media/              Screenshots and diagrams
 resources/icons/         App and tray branding
 scripts/                 Icon-generation tooling
-vite.web-demo.config.ts  Isolated Vite build configuration for the browser demo
 ```
 
 ## Next steps
 
-The strongest next work is validation, not adding more controls:
+The strongest next work is deeper validation rather than adding more controls:
 
-1. integrate OD and OS correction behavior more rigorously
-2. add automated tests for optics, scoring, and calibration math
-3. benchmark latency and visual quality under controlled viewing conditions
-4. compare Gaussian, Wiener, and higher-order optical models against predefined success criteria
+1. develop a principled simultaneous binocular rendering model rather than switching one screen-level eye profile at a time
+2. benchmark frame time, latency, calibration error, and visual quality under controlled hardware and viewing conditions
+3. expand automated coverage around calibration regression, guided-workflow scoring, and physical screen conversions
+4. compare Gaussian, Wiener, and higher-order optical models against predefined visual and numerical success criteria
+5. move MediaPipe runtime assets into a controlled local packaging path
 
 ## Credits
 
-Refract was developed collaboratively by Vlad Duckardt and Kevin Zhu. The original development history remains available in [`VDuckardtt/refract`](https://github.com/VDuckardtt/refract); this repository is my public version of the project, including later refinements, documentation, and the browser demo.
+Refract was developed collaboratively by Vlad Duckardt and Kevin Zhu. The original development history remains available in [`VDuckardtt/refract`](https://github.com/VDuckardtt/refract).
 
-The project's difficulty came from making several systems operate together: refractive parameters had to become a usable correction model, webcam landmarks had to become stable screen coordinates, those coordinates had to drive a localized GPU correction over a continuously captured desktop, and the entire loop had to remain responsive, reversible, and understandable enough for people to test.
+This public repository includes later product refinements, the browser adaptation, technical diagrams, documentation, runtime-credibility cleanup, automated numerical verification, and deployment checks. The project's central difficulty remains the same: refractive parameters have to become a usable computational model, noisy webcam landmarks have to become stable screen coordinates, those coordinates have to drive localized GPU correction over changing content, and the whole loop has to remain responsive, reversible, understandable, and honest about its limits.
