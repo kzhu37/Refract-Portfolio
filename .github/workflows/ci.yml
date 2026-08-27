@@ -24,6 +24,40 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Verify portfolio presentation
+        run: |
+          node <<'NODE'
+          const fs = require('fs')
+          const readme = fs.readFileSync('README.md', 'utf8')
+
+          const forbidden = [
+            ['em dash', '\u2014'],
+            ['en dash', '\u2013']
+          ]
+
+          for (const [label, character] of forbidden) {
+            if (readme.includes(character)) {
+              console.error(`README contains a forbidden ${label}`)
+              process.exit(1)
+            }
+          }
+
+          if (/\badmissions?\b/i.test(readme)) {
+            console.error('README contains public-facing admissions wording')
+            process.exit(1)
+          }
+
+          const media = [...new Set(readme.match(/docs\/media\/[A-Za-z0-9._/-]+/g) || [])]
+          const missing = media.filter((path) => !fs.existsSync(path))
+
+          if (missing.length) {
+            console.error(`README references missing media:\n${missing.join('\n')}`)
+            process.exit(1)
+          }
+
+          console.log(`Portfolio presentation check passed for ${media.length} media references`)
+          NODE
+
       - name: Install dependencies
         run: npm ci
 
