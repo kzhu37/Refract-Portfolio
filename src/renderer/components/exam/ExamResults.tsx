@@ -17,20 +17,10 @@ export interface ExamResultsProps {
 
 // --- Helpers ------------------------------------------------------------------
 
-const SAMPLE_TEXT =
-  'Edges appear less defined without optical correction. Reading distance text requires additional focus effort. Fine detail and contrast are visibly reduced.'
-
 /** Format a diopter value with a proper minus sign (U+2212). */
 function fmtDiop(d: number): string {
   const sign = d >= 0 ? '+' : '-'
   return `${sign}${Math.abs(d).toFixed(2)}`
-}
-
-/** Map examConfidence (0-1) to a display tier. */
-function confidenceTier(c: number): 'high' | 'medium' | 'low' {
-  if (c >= 0.75) return 'high'
-  if (c >= 0.50) return 'medium'
-  return 'low'
 }
 
 // --- Sub-components -----------------------------------------------------------
@@ -54,41 +44,7 @@ function AllDotsFilled() {
   )
 }
 
-/** Success/warning/danger badge for the confidence row. */
-function ConfidenceBadge({ confidence }: { confidence: number }) {
-  const tier = confidenceTier(confidence)
-
-  const styles = {
-    high:   { bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.30)',  color: '#34D399' },
-    medium: { bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.30)',  color: '#FBBF24' },
-    low:    { bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.30)', color: '#F87171' },
-  }[tier]
-
-  const label =
-    tier === 'high'   ? 'High confidence'   :
-    tier === 'medium' ? 'Medium confidence' :
-                        'Low confidence'
-
-  return (
-    <span
-      className="rounded-badge font-primary"
-      style={{
-        padding:     '3px 10px',
-        background:  styles.bg,
-        border:      `1px solid ${styles.border}`,
-        color:       styles.color,
-        fontSize:    12,
-        fontWeight:  500,
-        letterSpacing: '0.01em',
-        lineHeight:  1.5,
-      }}
-    >
-      {label}
-    </span>
-  )
-}
-
-/** One OD or OS line in the prescription hero block. */
+/** One OD or OS line in the estimate hero block. */
 function PrescriptionRow({
   label,
   rx,
@@ -101,7 +57,6 @@ function PrescriptionRow({
 
   return (
     <div className="flex items-baseline" style={{ gap: 40 }}>
-      {/* Eye label */}
       <span
         className="font-primary uppercase text-text-tertiary"
         style={{
@@ -116,7 +71,6 @@ function PrescriptionRow({
         {label}
       </span>
 
-      {/* Value - JetBrains Mono, 36px */}
       <span
         className="font-mono text-text-primary"
         style={{ fontSize: 36, fontWeight: 500, letterSpacing: '-0.01em', lineHeight: 1.2 }}
@@ -151,8 +105,8 @@ export function ExamResults({
   OS,
   calibration,
 }: ExamResultsProps): JSX.Element {
-  const navigate         = useNavigate()
-  const setPrescription  = usePrescriptionStore(s => s.setPrescription)
+  const navigate          = useNavigate()
+  const setPrescription   = usePrescriptionStore(s => s.setPrescription)
   const [saved, setSaved] = useState(false)
 
   const estimated = useMemo(
@@ -160,13 +114,6 @@ export function ExamResults({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   )
-
-  // Blur the "Without Refract" panel proportional to the stronger sphere.
-  const dominantSphere = Math.max(
-    Math.abs(estimated.OD.sphere),
-    Math.abs(estimated.OS.sphere)
-  )
-  const blurPx = Math.max(1.5, Math.min(7, dominantSphere)).toFixed(1)
 
   function handleEnable(): void {
     setPrescription(estimated)
@@ -201,38 +148,41 @@ export function ExamResults({
       <div
         className="flex-shrink-0 flex items-center justify-center"
         style={{
-          height:     40,
-          background: 'rgba(251,191,36,0.10)',
+          minHeight:   40,
+          padding:     '8px 24px',
+          background:  'rgba(251,191,36,0.10)',
         }}
       >
         <span
-          className="text-caption text-text-secondary font-primary"
+          className="text-caption text-text-secondary font-primary text-center"
           style={{ letterSpacing: '0.01em' }}
         >
-          Estimate only · ±0.50 D · Not a substitute for a professional exam
+          Exploratory estimate only · Not a refraction or a substitute for a professional eye exam
         </span>
       </div>
 
       {/* -- Main content ------------------------------------------------- */}
-      <main
-        className="flex-1 flex items-center justify-center overflow-y-auto px-8"
-      >
+      <main className="flex-1 flex items-center justify-center overflow-y-auto px-8">
         <div
           className="flex flex-col items-center font-primary"
           style={{ width: 640 }}
         >
 
-          {/* Heading */}
           <h1
             className="text-heading-xl text-text-primary text-center"
-            style={{ marginBottom: 48 }}
+            style={{ marginBottom: 16 }}
           >
-            Your prescription
+            Guided estimate
           </h1>
 
-          {/* -- Prescription hero block ------------------------------- */}
-          <div className="relative" style={{ marginBottom: 16 }}>
-            {/* Atmospheric glow */}
+          <p
+            className="text-body-sm text-text-secondary text-center font-primary"
+            style={{ maxWidth: 520, margin: '0 0 44px', lineHeight: 1.65 }}
+          >
+            Refract uses the responses from this experimental workflow to create a starting point for the prototype. Visual acuity does not uniquely determine a prescription, so these values should not be treated as measured refraction.
+          </p>
+
+          <div className="relative" style={{ marginBottom: 28 }}>
             <div
               aria-hidden
               style={{
@@ -247,7 +197,6 @@ export function ExamResults({
               }}
             />
 
-            {/* OD / OS rows */}
             <div
               className="relative flex flex-col items-center"
               style={{ gap: 16, zIndex: 1 }}
@@ -257,85 +206,23 @@ export function ExamResults({
             </div>
           </div>
 
-          {/* Confidence badge */}
-          <div style={{ marginBottom: 40 }}>
-            <ConfidenceBadge confidence={estimated.examConfidence ?? 0.65} />
-          </div>
-
-          {/* Divider */}
           <div
-            className="w-full bg-border-subtle"
-            style={{ height: 1, marginBottom: 32 }}
-          />
-
-          {/* -- Before / After preview -------------------------------- */}
-          <div className="w-full" style={{ marginBottom: 8 }}>
-            <h2
-              className="text-heading-sm text-text-primary"
-              style={{ marginBottom: 16 }}
+            className="w-full bg-bg-elevated border border-border-subtle rounded-card-lg"
+            style={{ padding: '20px 24px', marginBottom: 28 }}
+          >
+            <p
+              className="text-body-sm text-text-secondary font-primary text-center"
+              style={{ margin: 0, lineHeight: 1.65 }}
             >
-              Preview: what correction does
-            </h2>
+              The values above are used only as inputs to Refract's experimental display model. For a known prescription, enter the professionally measured OD and OS values manually instead.
+            </p>
           </div>
 
-          <div className="flex w-full" style={{ gap: 24, marginBottom: 40 }}>
-            {/* Without Refract */}
-            <div className="flex-1 flex flex-col" style={{ gap: 8 }}>
-              <span
-                className="text-caption text-text-tertiary font-primary"
-                style={{ letterSpacing: '0.01em' }}
-              >
-                Without Refract
-              </span>
-              <div
-                className="bg-bg-elevated border border-border-subtle rounded-card-lg"
-                style={{ padding: 20 }}
-              >
-                <p
-                  className="text-body-md text-text-primary font-primary select-none"
-                  style={{
-                    lineHeight: 1.7,
-                    filter:     `blur(${blurPx}px)`,
-                    opacity:    0.7,
-                  }}
-                >
-                  {SAMPLE_TEXT}
-                </p>
-              </div>
-            </div>
-
-            {/* With Refract */}
-            <div className="flex-1 flex flex-col" style={{ gap: 8 }}>
-              <span
-                className="text-caption font-primary"
-                style={{ color: '#34D399', letterSpacing: '0.01em' }}
-              >
-                With Refract
-              </span>
-              <div
-                className="bg-bg-elevated rounded-card-lg"
-                style={{
-                  padding:   20,
-                  border:    '1px solid rgba(52,211,153,0.25)',
-                  boxShadow: '0 0 20px rgba(52,211,153,0.08)',
-                }}
-              >
-                <p
-                  className="text-body-md text-text-primary font-primary"
-                  style={{ lineHeight: 1.7 }}
-                >
-                  {SAMPLE_TEXT}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* PD note */}
           <span
             className="text-caption text-text-tertiary font-primary text-center"
-            style={{ letterSpacing: '0.01em' }}
+            style={{ letterSpacing: '0.01em', maxWidth: 520, lineHeight: 1.6 }}
           >
-            PD estimated at 63 mm · Update in Settings for best accuracy
+            PD uses a 63 mm population default. Update it in Settings if you know your measured value.
           </span>
 
         </div>
@@ -357,14 +244,14 @@ export function ExamResults({
               className="h-8 px-5 rounded-btn text-body-sm font-semibold text-text-on-brand border-none cursor-pointer outline-none shadow-glow-brand font-primary"
               style={{ background: 'linear-gradient(135deg, #7B5CF0 0%, #4B8AF0 100%)' }}
             >
-              Enable correction →
+              Use this estimate →
             </button>
             <button
               onClick={handleEditManually}
               className="h-7 px-3 rounded-btn bg-transparent border-none cursor-pointer outline-none font-primary text-body-sm hover:opacity-80 transition-opacity"
               style={{ color: '#4B8AF0' }}
             >
-              Edit manually
+              Enter measured values instead
             </button>
           </>
         )}
