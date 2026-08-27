@@ -4,6 +4,7 @@
   "installCommand": "npm ci --ignore-scripts",
   "buildCommand": "npm run build:web-demo",
   "outputDirectory": "web-demo-dist",
+  "alias": ["refract-portfolio.vercel.app"],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],
