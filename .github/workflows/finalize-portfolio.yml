@@ -1,0 +1,520 @@
+name: Finalize Refract Portfolio
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/finalize-portfolio.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: finalize-refract-portfolio
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Apply final credibility and presentation edits
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding='utf-8')
+              if text.count(old) != 1:
+                  raise SystemExit(f'{path}: expected exactly one match for replacement, found {text.count(old)}')
+              file.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          readme = Path('README.md')
+          text = readme.read_text(encoding='utf-8')
+
+          badge_block = '''<p align="center">
+  <a href="https://github.com/kzhu37/Refract-Portfolio/actions/workflows/ci.yml"><img alt="Portfolio CI" src="https://github.com/kzhu37/Refract-Portfolio/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/kzhu37/Refract-Portfolio/actions/workflows/production-smoke.yml"><img alt="Production Browser Smoke" src="https://github.com/kzhu37/Refract-Portfolio/actions/workflows/production-smoke.yml/badge.svg"></a>
+</p>
+
+'''
+          if badge_block not in text:
+              raise SystemExit('README badge block not found')
+          text = text.replace(badge_block, '', 1)
+
+          visual_anchor = '''</table>
+
+## At a glance
+'''
+          visual_insert = '''</table>
+
+<p align="center">
+  <img src="docs/media/refract-correction-demo.gif" alt="Refract browser demo showing the real localized WebGL2 correction region moving across detailed content and switching to the directional prescription preset" width="94%">
+</p>
+<p align="center"><sub><strong>Live renderer evidence:</strong> captured from the real browser build. The pointer moves the localized correction region, then the demo switches to a directional prescription and briefly reveals the original source for comparison.</sub></p>
+
+## At a glance
+'''
+          if visual_anchor not in text:
+              raise SystemExit('README visual insertion anchor not found')
+          text = text.replace(visual_anchor, visual_insert, 1)
+
+          text = text.replace(
+              '| **Verification** | Nine focused numerical and renderer invariants, TypeScript checks, desktop and browser builds, plus deployed interaction smoke tests |',
+              '| **Verification** | Ten focused numerical and renderer invariants, TypeScript checks, desktop and browser builds, plus deployed interaction smoke tests |',
+              1,
+          )
+
+          optics_anchor = '''Prescription conversion is implemented in [`prescription.ts`](src/renderer/lib/optics/prescription.ts). PSF and active correction-kernel generation live in [`psf.ts`](src/renderer/lib/optics/psf.ts).
+'''
+          optics_replacement = '''Prescription conversion is implemented in [`prescription.ts`](src/renderer/lib/optics/prescription.ts). PSF and active correction-kernel generation live in [`psf.ts`](src/renderer/lib/optics/psf.ts). The derivation boundaries, engineering approximations, and literature context are documented in [`docs/OPTICAL_MODEL.md`](docs/OPTICAL_MODEL.md).
+'''
+          if optics_anchor not in text:
+              raise SystemExit('README optics anchor not found')
+          text = text.replace(optics_anchor, optics_replacement, 1)
+
+          text = text.replace(
+              'The workflow includes viewing-distance calibration, physical screen calibration using a known-size reference, Snellen-style acuity testing, astigmatism clock and fan interfaces, contrast comparison, and a clearly labeled heuristic result.',
+              'The workflow includes viewing-distance calibration, physical screen calibration using a known-size reference, Snellen-style acuity testing, astigmatism clock and fan interfaces, contrast comparison, and a clearly labeled heuristic result. The acuity-to-prescription step is a prototype interaction heuristic, not a validated way to infer refraction from Snellen acuity.',
+              1,
+          )
+
+          text = text.replace('`npm test` compiles and runs nine deterministic checks covering:', '`npm test` compiles and runs ten deterministic checks covering:', 1)
+          test_anchor = '- directional response when cylinder and axis are present\n'
+          if test_anchor not in text:
+              raise SystemExit('README test insertion anchor not found')
+          text = text.replace(test_anchor, test_anchor + '- rejection of non-positive or non-finite physical blur-model inputs\n', 1)
+
+          repo_old = '''docs/media/              Screenshots and technical diagrams
+resources/icons/         App and tray branding
+'''
+          repo_new = '''docs/
+  OPTICAL_MODEL.md       Model assumptions, evidence boundaries, references
+  media/                 Screenshots and technical diagrams
+resources/icons/         App and tray branding
+'''
+          if repo_old not in text:
+              raise SystemExit('README repository guide anchor not found')
+          text = text.replace(repo_old, repo_new, 1)
+
+          readme.write_text(text, encoding='utf-8')
+
+          optical_model = '''# Optical model assumptions and claim boundaries
+
+Refract is an engineering prototype for exploring display-side precompensation. It is not a clinical optical simulator, a prescription estimator, or a substitute for corrective lenses or professional eye care. This note documents what the current numerical model is intended to approximate, where the implementation deliberately simplifies ocular optics, and which claims the project does not make.
+
+## 1. What the model is trying to approximate
+
+A defocused eye spreads light from an ideal point over a finite retinal region. In first-order geometrical optics, blur size grows with pupil diameter and dioptric defocus. Smith describes angular defocus blur as an approximate function of pupil diameter and refractive error, while later treatments derive the same basic proportional relationship from similar-triangle geometry.
+
+Refract uses that relationship as physical motivation, not as a claim that its screen-space kernel reproduces a measured retinal point spread function.
+
+Useful references:
+
+- G. Smith, "Angular diameter of defocus blur discs," American Journal of Optometry and Physiological Optics, 1982. [PubMed](https://pubmed.ncbi.nlm.nih.gov/7180930/) and [DOI](https://doi.org/10.1097/00006324-198211000-00006)
+- C. Chan, G. Smith, and R. J. Jacobs, "Simulating refractive errors: source and observer methods," American Journal of Optometry and Physiological Optics, 1985. [PubMed](https://pubmed.ncbi.nlm.nih.gov/3985114/)
+- L. N. Thibos and C. A. Thibos, "Geometrical Optical Analysis of Defocused Retinal Images to Compute the Size of Retinal Blur Circles Relative to Object Size," US Ophthalmic Review, 2011. [DOI](https://doi.org/10.17925/USOR.2011.04.02.104)
+
+## 2. Refract's pixel-space blur scale
+
+[`blurRadiusPixels`](../src/renderer/lib/optics/prescription.ts) converts prescription and setup values into two directional blur scales. The current inputs are sphere, cylinder, axis, viewing distance, screen pixels per metre, and an assumed pupil diameter.
+
+The code uses a distance-adjusted engineering heuristic to keep the display-space blur scale bounded across practical viewing conditions. It should not be read as a clinically validated retinal-blur equation. In particular, the numerical output is used as a Gaussian kernel scale for a real-time rendering experiment, not as a prediction of an individual's retinal image.
+
+This distinction matters because a physical blur-disc diameter and a Gaussian standard deviation are not the same quantity. Refract intentionally chooses a Gaussian representation because it is compact, normalized, directional, and practical for repeated GPU convolution.
+
+## 3. Sphere, cylinder, and axis
+
+For sphere-only prescriptions, the prototype uses the same blur scale in both kernel axes. When cylinder is present, it evaluates the sphere meridian and the sphere-plus-cylinder meridian separately, then rotates the resulting ellipse using the prescription axis convention.
+
+This captures directional behavior in a tractable form, but it omits many effects that can shape a real ocular point spread function, including diffraction, higher-order aberrations, pupil shape, accommodation, tear-film variation, and individual wavefront structure. Higher-order optical representations were explored during research, but they are not part of the active runtime model.
+
+## 4. Why the active PSF is Gaussian
+
+The live point spread function is a rotated anisotropic Gaussian. For every kernel sample, Refract rotates the sample coordinate into the principal-axis frame, evaluates the Gaussian, and normalizes the complete kernel to unit sum.
+
+The Gaussian is therefore best understood as a computational approximation with three practical properties:
+
+1. It turns prescription directionality into a smooth bounded kernel.
+2. It is inexpensive enough for repeated model updates and GPU use.
+3. It makes numerical invariants such as normalization, finiteness, kernel size, and directional response easy to verify.
+
+It is not presented as a wavefront-derived or clinically measured ocular PSF.
+
+## 5. Correction is separate from the blur model
+
+The active correction kernel is
+
+```text
+K = 2I - PSF
+```
+
+where `I` is the identity kernel. This is a normalized spatial unsharp correction. Runtime strength is applied once in the WebGL shader by blending original and corrected luminance. Keeping strength out of cached kernel generation avoids stale kernels and gives the user-facing control one consistent meaning.
+
+[`wiener.ts`](../src/renderer/lib/optics/wiener.ts) contains a separate regularized inverse-filter experiment. It is retained as research code and is not an active runtime control.
+
+## 6. The guided acuity workflow is not refraction
+
+The guided workflow includes a monotonic Snellen-to-sphere mapping so a user without a known prescription can explore the interface. That table is a product prototype heuristic. It is not a validated refraction algorithm.
+
+Published work shows why the distinction is important. Visual acuity and refractive error are related at a population level, but one does not uniquely determine the other for an individual. In the PERK study, the same one-diopter refractive-error ranges contained visual acuities spanning several Snellen lines, and similar acuities could occur across multiple diopters of refractive error.
+
+Reference:
+
+- V. R. Santos et al., "Relationship between refractive error and visual acuity in the Prospective Evaluation of Radial Keratotomy (PERK) Study," Archives of Ophthalmology, 1987. [PubMed](https://pubmed.ncbi.nlm.nih.gov/3800751/) and [DOI](https://doi.org/10.1001/archopht.1987.01060010092038)
+
+For that reason, Refract treats a known professional prescription as the stronger input path and labels guided estimates as heuristic.
+
+## 7. What the current tests establish
+
+The automated numerical checks establish engineering properties of the implementation, including normalization, finite outputs, directional response, identity behavior for neutral prescriptions, live-kernel bounds, physical-input guards, prescription normalization, correction-strength semantics, and gaze-smoother stability.
+
+They do not establish clinical effectiveness, visual-acuity improvement, equivalence to corrective lenses, or population-level safety. User testing in this repository is exploratory and is presented separately from the numerical verification.
+
+## 8. Stronger future validation
+
+The most valuable next experiments are measurements rather than additional controls:
+
+- record frame time and end-to-end correction latency on defined hardware
+- repeat gaze calibration under controlled camera and lighting conditions and report screen-space error distributions
+- compare Gaussian and inverse-filter variants against predefined artifact and readability criteria
+- test sensitivity to viewing distance, screen scale, pupil assumptions, and head movement
+- define success criteria before collecting any further human feedback
+
+Until those measurements exist, the repository keeps its claims at the level supported by the current prototype.
+'''
+          Path('docs/OPTICAL_MODEL.md').write_text(optical_model, encoding='utf-8')
+
+          replace_once(
+              'src/renderer/lib/optics/prescription.ts',
+              '''/**
+ * Clinical correlation table - maps Snellen denominator to estimated
+ * sphere power in diopters. Negative values = myopia.
+ *
+ * Values derived from population-level visual acuity studies correlating
+ * uncorrected Snellen acuity with refractive error.
+ */''',
+              '''/**
+ * Prototype guidance table mapping Snellen denominator to a coarse sphere
+ * estimate for the experimental guided workflow. Negative values = myopia.
+ *
+ * This is an interaction heuristic, not a validated refraction model. Visual
+ * acuity and refractive error are related at a population level but do not map
+ * one-to-one for an individual. See docs/OPTICAL_MODEL.md for claim boundaries.
+ */''',
+          )
+
+          replace_once(
+              'src/renderer/lib/optics/prescription.ts',
+              '''/**
+ * Return an estimated sphere correction (diopters) for a Snellen denominator.
+ * Interpolates linearly between table entries when the denominator falls
+ * between known values.
+ */''',
+              '''/**
+ * Return the guided workflow's prototype sphere estimate for a Snellen
+ * denominator. Interpolates linearly between table entries when the denominator
+ * falls between known values. This output must not be treated as a prescription.
+ */''',
+          )
+
+          replace_once(
+              'src/renderer/lib/optics/prescription.ts',
+              '''/**
+ * Compute the Gaussian blur radius (in pixels) that models the defocus
+ * induced by the given prescription at the specified viewing distance.
+ *
+ * Defocus blur formula (geometric optics):
+ *   blur_metres = |D| × pupil_m / (1 + |D| × dist_m)
+ *   blur_px     = blur_metres × screenPPM
+ *
+ * For a spherocylindrical Rx:
+ *   - The sphere meridian has power = sphere
+ *   - The cylinder meridian has power = sphere + cylinder
+ *   Each meridian contributes an independent sigma; the result is an
+ *   elliptical blur kernel rotated by the cylinder axis.
+ */''',
+              '''/**
+ * Compute the prototype Gaussian blur scale in screen pixels.
+ *
+ * Geometrical optics motivates blur growing with pupil size and dioptric
+ * defocus, but the distance-adjusted mapping below is an engineering heuristic
+ * for display-space kernel sizing. It is not a clinically validated retinal
+ * blur equation, and its output is used as Gaussian sigma rather than a measured
+ * retinal blur-disc diameter. See docs/OPTICAL_MODEL.md.
+ *
+ * For a spherocylindrical Rx:
+ *   - The sphere meridian has power = sphere
+ *   - The cylinder meridian has power = sphere + cylinder
+ *   Each meridian contributes an independent scale; the result is an
+ *   elliptical Gaussian kernel rotated by the cylinder axis.
+ */''',
+          )
+
+          prescription = Path('src/renderer/lib/optics/prescription.ts')
+          ptext = prescription.read_text(encoding='utf-8')
+          guard_anchor = '''  const dist_m = viewingDistanceCm / 100
+  const pupil_m = pupilDiameterMm / 1000
+'''
+          guard_insert = '''  const finiteInputs = [sphere, viewingDistanceCm, screenPPM, pupilDiameterMm]
+  if (!finiteInputs.every(Number.isFinite)) {
+    throw new Error('Blur-model inputs must be finite')
+  }
+  if (cylinder !== null && !Number.isFinite(cylinder)) {
+    throw new Error('Cylinder must be finite when provided')
+  }
+  if (axis !== null && axis !== undefined && !Number.isFinite(axis)) {
+    throw new Error('Axis must be finite when provided')
+  }
+  if (viewingDistanceCm <= 0 || screenPPM <= 0 || pupilDiameterMm <= 0) {
+    throw new Error('Viewing distance, screen density, and pupil diameter must be positive')
+  }
+
+  const dist_m = viewingDistanceCm / 100
+  const pupil_m = pupilDiameterMm / 1000
+'''
+          if guard_anchor not in ptext:
+              raise SystemExit('prescription.ts physical-input guard anchor not found')
+          prescription.write_text(ptext.replace(guard_anchor, guard_insert, 1), encoding='utf-8')
+
+          iris = Path('src/renderer/lib/eyetracking/iris-gaze.ts')
+          itext = iris.read_text(encoding='utf-8')
+          replacements = {
+              'head-pose-invariant\n// feature: the iris position RELATIVE to the eye corners, divided by the eye\n// width. Because the corners move with the head, this cancels head translation\n// and viewing distance, leaving a signal that depends (mostly) on gaze angle.':
+              'eye-relative\n// feature: the iris position RELATIVE to the eye corners, divided by the eye\n// width. Because the corners move with the head and the offset is scaled by eye\n// width, this reduces sensitivity to translation and apparent-size changes\n// compared with raw image coordinates. It is not invariant to arbitrary head pose.',
+              'Head-pose-invariant gaze feature for one eye': 'Eye-relative gaze feature for one eye',
+              'head-normalized gaze feature': 'eye-relative gaze feature',
+              'head-normalized gaze feature (iris offset ÷ eye width)': 'eye-relative gaze feature (iris offset ÷ eye width)',
+          }
+          for old, new in replacements.items():
+              if old not in itext:
+                  raise SystemExit(f'iris-gaze.ts expected phrase not found: {old[:55]}')
+              itext = itext.replace(old, new)
+          iris.write_text(itext, encoding='utf-8')
+
+          replace_once(
+              'src/renderer/components/eyetracking/CalibrationOverlay.tsx',
+              '''// ---------------------------------------------------------------------------
+// ResultBadge - accuracy rating inside the results card
+// ---------------------------------------------------------------------------
+
+function ResultBadge({ accuracyPx }: { accuracyPx: number }): JSX.Element {
+  const excellent = accuracyPx < 80
+  const good      = accuracyPx < 150
+
+  const label   = excellent ? 'Excellent' : good ? 'Good' : 'Poor'
+  const color   = excellent ? '#34D399'   : good ? '#FBBF24' : '#F87171'
+  const message = excellent
+    ? 'Correction will track your gaze accurately.'
+    : good
+    ? 'Correction will work but tracking may occasionally drift.'
+    : 'Eye tracking is unreliable. Consider recalibrating.'
+''',
+              '''// ---------------------------------------------------------------------------
+// ResultBadge - prototype validation summary inside the results card
+// ---------------------------------------------------------------------------
+
+function ResultBadge({ accuracyPx }: { accuracyPx: number }): JSX.Element {
+  const lowError = accuracyPx < 80
+  const moderateError = accuracyPx < 150
+
+  const label = lowError ? 'Low validation error' : moderateError ? 'Moderate validation error' : 'High validation error'
+  const color = lowError ? '#34D399' : moderateError ? '#FBBF24' : '#F87171'
+  const message = lowError
+    ? 'This calibration produced a relatively small mean screen-space error. Tracking can still drift as head pose, lighting, or camera position changes.'
+    : moderateError
+    ? 'This calibration produced a moderate mean screen-space error. Recalibrate if the correction region drifts during use.'
+    : 'This calibration produced a high mean screen-space error. Recalibration is recommended before using camera gaze.'
+''',
+          )
+
+          tests = Path('tests/math-tests.ts')
+          ttext = tests.read_text(encoding='utf-8')
+          test_function_anchor = '''function testLiveKernelSizingContract(): void {
+'''
+          new_test = '''function testBlurModelRejectsInvalidPhysicalInputs(): void {
+  const base = {
+    sphere: -2,
+    cylinder: null,
+    viewingDistanceCm: 60,
+    screenPPM: 3780,
+  }
+
+  assert.throws(() => blurRadiusPixels({ ...base, viewingDistanceCm: 0 }))
+  assert.throws(() => blurRadiusPixels({ ...base, screenPPM: -1 }))
+  assert.throws(() => blurRadiusPixels({ ...base, pupilDiameterMm: Number.NaN }))
+  assert.throws(() => blurRadiusPixels({ ...base, cylinder: Number.POSITIVE_INFINITY }))
+}
+
+'''
+          if test_function_anchor not in ttext:
+              raise SystemExit('tests insertion anchor not found')
+          ttext = ttext.replace(test_function_anchor, new_test + test_function_anchor, 1)
+          array_anchor = "  ['Directional blur response', testDirectionalBlur],\n"
+          if array_anchor not in ttext:
+              raise SystemExit('tests array insertion anchor not found')
+          ttext = ttext.replace(array_anchor, array_anchor + "  ['Blur-model physical input guards', testBlurModelRejectsInvalidPhysicalInputs],\n", 1)
+          tests.write_text(ttext, encoding='utf-8')
+
+          ci = Path('.github/workflows/ci.yml')
+          citext = ci.read_text(encoding='utf-8')
+          ci_old = "          collect('docs/media', new Set(['.svg']))\n"
+          ci_new = "          collect('docs', new Set(['.md', '.svg']))\n"
+          if ci_old not in citext:
+              raise SystemExit('CI docs scan anchor not found')
+          ci.write_text(citext.replace(ci_old, ci_new, 1), encoding='utf-8')
+
+          forbidden = ['\u2014', '\u2013']
+          for path in ['README.md', 'docs/OPTICAL_MODEL.md']:
+              content = Path(path).read_text(encoding='utf-8')
+              if any(char in content for char in forbidden):
+                  raise SystemExit(f'{path} contains a forbidden long dash')
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify edited project
+        run: |
+          npm run typecheck
+          npm test
+          npm run build
+          npm run build:web-demo
+
+      - name: Install demo capture dependencies
+        run: python -m pip install --disable-pip-version-check selenium pillow
+
+      - name: Capture real browser correction demo
+        run: |
+          python -m http.server 4173 --directory web-demo-dist >/tmp/refract-demo-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+
+          python - <<'PY'
+          from io import BytesIO
+          import time
+          from pathlib import Path
+          from PIL import Image
+          from selenium import webdriver
+          from selenium.webdriver.common.action_chains import ActionChains
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.support.ui import WebDriverWait
+          from selenium.webdriver.support import expected_conditions as EC
+
+          options = webdriver.ChromeOptions()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--enable-webgl')
+          options.add_argument('--ignore-gpu-blocklist')
+          options.add_argument('--enable-unsafe-swiftshader')
+          options.add_argument('--use-gl=angle')
+          options.add_argument('--use-angle=swiftshader')
+
+          driver = webdriver.Chrome(options=options)
+          frames = []
+
+          def capture(element):
+              image = Image.open(BytesIO(element.screenshot_as_png)).convert('RGB')
+              max_width = 1080
+              if image.width > max_width:
+                  height = round(image.height * max_width / image.width)
+                  image = image.resize((max_width, height), Image.Resampling.LANCZOS)
+              frames.append(image)
+
+          try:
+              driver.set_window_size(1500, 1150)
+              driver.get('http://127.0.0.1:4173')
+              wait = WebDriverWait(driver, 30)
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '.demo-shell')))
+              wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '.pipeline-status').get_attribute('data-render-status') == 'ready')
+
+              demo = driver.find_element(By.CSS_SELECTOR, '.demo-shell')
+              stage = driver.find_element(By.CSS_SELECTOR, '[data-testid="correction-stage"]')
+              driver.execute_script("arguments[0].scrollIntoView({block:'start',inline:'center'});", demo)
+              time.sleep(0.4)
+
+              positions = [(-220, -90), (-120, -45), (0, 0), (120, 55), (220, 95), (130, -75), (0, 70), (-140, 85)]
+              for dx, dy in positions[:4]:
+                  ActionChains(driver).move_to_element(stage).move_by_offset(dx, dy).perform()
+                  time.sleep(0.24)
+                  capture(demo)
+
+              driver.find_element(By.XPATH, "//button[contains(., 'Directional')]").click()
+              wait.until(lambda d: d.find_element(By.ID, 'sphere').get_attribute('value') == '-1.75')
+              time.sleep(0.3)
+              for dx, dy in positions[4:]:
+                  ActionChains(driver).move_to_element(stage).move_by_offset(dx, dy).perform()
+                  time.sleep(0.24)
+                  capture(demo)
+
+              compare = driver.find_element(By.XPATH, "//button[contains(., 'Hold for original')]")
+              ActionChains(driver).move_to_element(compare).click_and_hold(compare).perform()
+              time.sleep(0.28)
+              capture(demo)
+              capture(demo)
+              ActionChains(driver).release().perform()
+              time.sleep(0.28)
+              capture(demo)
+              capture(demo)
+
+              if len(frames) < 8:
+                  raise RuntimeError('Too few demo frames captured')
+
+              output = Path('docs/media/refract-correction-demo.gif')
+              frames[0].save(
+                  output,
+                  save_all=True,
+                  append_images=frames[1:],
+                  duration=280,
+                  loop=0,
+                  optimize=True,
+                  disposal=2,
+              )
+              size_mb = output.stat().st_size / (1024 * 1024)
+              print(f'Captured {len(frames)} authentic browser-demo frames, GIF size {size_mb:.2f} MiB')
+              if size_mb > 9:
+                  raise RuntimeError(f'Portfolio GIF is too large: {size_mb:.2f} MiB')
+          finally:
+              driver.quit()
+          PY
+
+      - name: Final portfolio checks
+        run: |
+          test -s docs/media/refract-correction-demo.gif
+          npm test
+          node <<'NODE'
+          const fs = require('fs')
+          const readme = fs.readFileSync('README.md', 'utf8')
+          for (const character of ['\u2014', '\u2013']) {
+            if (readme.includes(character)) throw new Error('README contains a forbidden long dash')
+          }
+          if (!readme.includes('docs/media/refract-correction-demo.gif')) {
+            throw new Error('README does not reference the captured demo GIF')
+          }
+          if (!fs.existsSync('docs/OPTICAL_MODEL.md')) {
+            throw new Error('Optical model documentation is missing')
+          }
+          NODE
+
+      - name: Commit finalized showcase
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/finalize-portfolio.yml
+          git add -A
+          git commit -m "Finalize Refract model credibility and live visual evidence [skip ci]"
+          git push origin HEAD:main
