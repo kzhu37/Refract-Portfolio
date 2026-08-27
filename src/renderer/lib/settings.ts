@@ -18,8 +18,8 @@ export function getSettings(): RendererSettings {
   return {
     correctionStrength: 0.8,
     fovealRadius: 100,
-    eyeTrackingEnabled: true,
-    trackingMode: 'eye',
+    eyeTrackingEnabled: false,
+    trackingMode: 'cursor',
     activeEye: 'OD',
     viewingDistanceCm: Number(import.meta.env.VITE_DEFAULT_VIEWING_DISTANCE_CM ?? 60)
   }
