@@ -23,17 +23,32 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: HTTP production preflight
+      - name: Wait for coherent production deployment
         run: |
           set -euo pipefail
-          code=$(curl -L --max-time 30 -sS -o /tmp/refract-production.html -w '%{http_code}' "$DEMO_URL")
-          echo "HTTP status: $code"
+          ready=0
+
+          for attempt in $(seq 1 12); do
+            code=$(curl -L --max-time 30 -sS -o /tmp/refract-production.html -w '%{http_code}' "$DEMO_URL")
+            asset=$(grep -oE 'src="/assets/[^"]+\.js"' /tmp/refract-production.html | head -1 | sed 's/^src="//;s/"$//' || true)
+
+            echo "Attempt $attempt: HTML status $code, asset ${asset:-missing}"
+
+            if [ "$code" = "200" ] && grep -q 'Refract' /tmp/refract-production.html && [ -n "$asset" ]; then
+              asset_code=$(curl -L --max-time 30 -sS -o /tmp/refract-production.js -w '%{http_code}' "$DEMO_URL$asset")
+              if [ "$asset_code" = "200" ] && ! grep -Eqi '<!doctype html|<html' /tmp/refract-production.js; then
+                ready=1
+                break
+              fi
+              echo "Asset was not ready yet: HTTP $asset_code"
+            fi
+
+            sleep 5
+          done
+
+          test "$ready" = "1"
           echo "Title: $(grep -o '<title>[^<]*</title>' /tmp/refract-production.html | head -1 || true)"
-          echo "Body preview:"
-          head -c 500 /tmp/refract-production.html | tr '\n' ' '
-          echo
-          test "$code" = "200"
-          grep -q 'Refract' /tmp/refract-production.html
+          echo "Production HTML and its current hashed JavaScript asset are coherent."
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -83,12 +98,6 @@ jobs:
                   print('TIMEOUT console:', driver.get_log('browser'))
                   raise
               return wait
-
-          def real_click(driver, element):
-              assert element.is_displayed() and element.is_enabled()
-              driver.execute_script("arguments[0].scrollIntoView({block:'center',inline:'center'});", element)
-              time.sleep(0.15)
-              ActionChains(driver).move_to_element(element).click().perform()
 
           driver = make_driver()
           try:
@@ -167,11 +176,14 @@ jobs:
           try:
               camera.set_window_size(1440, 1100)
               camera.get(URL)
-              wait = ready(camera)
-              camera_choice = camera.find_element(By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]")
-              real_click(camera, camera_choice)
-              wait.until(lambda d: 'Before the browser asks' in d.find_element(By.CSS_SELECTOR, '.camera-consent').text)
-              continue_button = camera.find_element(By.XPATH, "//button[contains(., 'Continue to camera')]")
+              ready(camera)
+              camera_wait = WebDriverWait(camera, 10)
+              camera_choice = camera_wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@role='radio' and contains(., 'Camera gaze')]")))
+              camera.execute_script("arguments[0].scrollIntoView({block:'center',inline:'center'});", camera_choice)
+              camera_choice.click()
+              consent = camera_wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '.camera-consent')))
+              assert 'Before the browser asks' in consent.text
+              continue_button = camera_wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Continue to camera')]")))
               assert continue_button.is_displayed() and continue_button.is_enabled()
               print('camera consent path: ok')
           finally:
@@ -179,10 +191,24 @@ jobs:
 
           deep = make_driver()
           try:
-              deep.get(URL + '/portfolio-check')
-              ready(deep)
+              deep.set_window_size(1440, 1100)
+              last_error = None
+              for attempt in range(1, 4):
+                  try:
+                      deep.get(URL + '/portfolio-check')
+                      ready(deep, timeout=15)
+                      last_error = None
+                      break
+                  except TimeoutException as error:
+                      last_error = error
+                      print(f'deep-link attempt {attempt} was not ready; retrying')
+                      time.sleep(2)
+              if last_error is not None:
+                  raise last_error
               assert 'correction pipeline work in your browser' in deep.find_element(By.CSS_SELECTOR, 'h1').text
               assert 'localhost' not in deep.page_source.lower()
+              severe = [x for x in deep.get_log('browser') if x['level'] == 'SEVERE']
+              assert not severe, severe
               print('deep-link refresh path: ok')
           finally:
               deep.quit()
