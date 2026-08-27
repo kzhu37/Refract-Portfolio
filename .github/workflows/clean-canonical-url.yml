@@ -27,6 +27,8 @@ jobs:
           files = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
           changed = []
           for name in filter(None, files):
+              if name == '.github/workflows/clean-canonical-url.yml':
+                  continue
               path = Path(name)
               try:
                   text = path.read_text()
