@@ -46,7 +46,7 @@ const DEFAULT_SETTINGS: DemoSettings = {
   sphere: -2.25,
   cylinder: -0.75,
   axis: 90,
-  strength: 0.72,
+  strength: 1,
   radius: 132,
   viewingDistance: 60,
 }
