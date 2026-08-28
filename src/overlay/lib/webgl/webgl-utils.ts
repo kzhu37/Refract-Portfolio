@@ -11,10 +11,16 @@ const QUAD_VERTICES = new Float32Array([
   -1,  1,  0, 1,
 ]);
 
-// The public browser showcase deliberately exaggerates the high-pass component
-// so the localized optical pre-correction is unmistakable on ordinary displays.
-// The Electron overlay has no class marker and therefore keeps the base kernel.
-const BROWSER_DEMO_KERNEL_GAIN = 7.0;
+// The public browser showcase uses the same base correction kernel as the
+// desktop renderer, then adds displaced zero-sum lobes so edge structure is
+// visibly doubled instead of reading like a bright spotlight. The Electron
+// overlay has no browser canvas class and therefore keeps the base kernel.
+const BROWSER_DEMO_BASE_GAIN = 1.25;
+const BROWSER_DEMO_PRIMARY_GHOST = 0.90;
+const BROWSER_DEMO_SECONDARY_GHOST = 0.32;
+const BROWSER_DEMO_PRIMARY_OFFSET_X = 6;
+const BROWSER_DEMO_PRIMARY_OFFSET_Y = 1;
+const BROWSER_DEMO_SECONDARY_OFFSET_X = 3;
 
 export class CorrectionRenderer {
   private canvas: HTMLCanvasElement;
@@ -113,7 +119,7 @@ export class CorrectionRenderer {
     const kernelLoc = this.uniformLocations.get('u_kernel');
     const sizeLoc = this.uniformLocations.get('u_kernelSize');
     const uploadedKernel = this.canvas.classList.contains('correction-canvas')
-      ? amplifyKernelAroundIdentity(kernelData, kernelSize, BROWSER_DEMO_KERNEL_GAIN)
+      ? buildBrowserShowcaseKernel(kernelData, kernelSize)
       : kernelData;
 
     if (kernelLoc && uploadedKernel.length > 0) gl.uniform1fv(kernelLoc, uploadedKernel);
@@ -188,11 +194,8 @@ export class CorrectionRenderer {
 
 function amplifyKernelAroundIdentity(
   kernelData: Float32Array,
-  kernelSize: number,
   gain: number,
 ): Float32Array {
-  if (kernelSize < 3 || kernelData.length === 0 || gain === 1) return kernelData;
-
   const centerIndex = Math.floor(kernelData.length / 2);
   const amplified = new Float32Array(kernelData.length);
 
@@ -202,6 +205,33 @@ function amplifyKernelAroundIdentity(
   }
 
   return amplified;
+}
+
+function buildBrowserShowcaseKernel(
+  kernelData: Float32Array,
+  kernelSize: number,
+): Float32Array {
+  if (kernelSize < 3 || kernelData.length === 0) return kernelData;
+
+  const half = Math.floor(kernelSize / 2);
+  const centerIndex = half * kernelSize + half;
+  const showcase = amplifyKernelAroundIdentity(kernelData, BROWSER_DEMO_BASE_GAIN);
+
+  const primaryX = Math.min(BROWSER_DEMO_PRIMARY_OFFSET_X, half);
+  const primaryY = Math.min(BROWSER_DEMO_PRIMARY_OFFSET_Y, half);
+  const secondaryX = Math.min(BROWSER_DEMO_SECONDARY_OFFSET_X, half);
+  const primaryIndex = (half + primaryY) * kernelSize + (half + primaryX);
+  const secondaryIndex = half * kernelSize + (half + secondaryX);
+  const displacedEnergy = BROWSER_DEMO_PRIMARY_GHOST + BROWSER_DEMO_SECONDARY_GHOST;
+
+  // Add two displaced positive lobes and remove the same energy from the
+  // centre tap. The zero-sum modification preserves uniform regions while
+  // producing clear duplicate contours around text and other hard edges.
+  showcase[centerIndex] -= displacedEnergy;
+  showcase[primaryIndex] += BROWSER_DEMO_PRIMARY_GHOST;
+  showcase[secondaryIndex] += BROWSER_DEMO_SECONDARY_GHOST;
+
+  return showcase;
 }
 
 export function compileShader(

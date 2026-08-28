@@ -233,7 +233,7 @@ export function drawDemoScene(canvas: HTMLCanvasElement): void {
   ctx.fillText('PSF(x,y) = exp(-½ · rᵀΣ⁻¹r)', 420, 248)
   ctx.fillStyle = '#8badc8'
   ctx.fillText('base kernel = 2I - PSF', 420, 276)
-  ctx.fillText('browser showcase gain = 7x', 420, 304)
+  ctx.fillText('browser showcase = base + ghost lobes', 420, 304)
   line(ctx, 420, 324, 716, 324, 'rgba(75,138,240,0.42)')
   for (let i = 0; i < 29; i += 1) {
     const h = 4 + Math.abs(Math.sin(i * 0.82)) * 22
@@ -242,7 +242,7 @@ export function drawDemoScene(canvas: HTMLCanvasElement): void {
   }
   ctx.fillStyle = '#6f89ad'
   ctx.font = '400 9px JetBrains Mono, monospace'
-  ctx.fillText('NORMALIZED UNSHARP CORRECTION KERNEL', 420, 372)
+  ctx.fillText('OFFSET LOBES: 90%@6PX + 32%@3PX', 420, 372)
 
   drawDetailPlate(ctx)
   drawVectorLandscape(ctx)
