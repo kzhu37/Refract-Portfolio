@@ -31,7 +31,7 @@ The full Electron prototype captures desktop content, turns prescription and phy
 > **Refract is an experimental research and engineering prototype.** It is not a medical device, clinical diagnostic tool, prescription estimator, or replacement for glasses, contact lenses, professional eye examinations, or other vision care. The guided workflow produces heuristic prototype inputs only.
 
 > [!NOTE]
-> **Collaborative project:** Refract's core prototype was developed with Vlad Duckardt. My later work focused on product evaluation and feedback-driven iteration, interface and usability refinement, desktop productization, the public browser adaptation, technical documentation, and automated verification. The original source history and specific contribution record are preserved in [Contribution and collaboration](#contribution-and-collaboration).
+> **Collaborative project:** Refract's core prototype was developed with Vladimir Dukkardt. My later work focused on product evaluation and feedback-driven iteration, interface and usability refinement, desktop productization, the public browser adaptation, technical documentation, and automated verification. The original source history and specific contribution record are preserved in [Contribution and collaboration](#contribution-and-collaboration).
 
 <p align="center">
   <img src="docs/media/refract-home.png" alt="Refract Electron desktop application home screen" width="86%">
@@ -403,7 +403,7 @@ scripts/                 Icon-generation tooling
 
 ## Contribution and collaboration
 
-Refract was developed collaboratively by **Vlad Duckardt and Kevin Zhu**. The original development history remains available in [`VDuckardtt/refract`](https://github.com/VDuckardtt/refract). This portfolio repository preserves that boundary rather than presenting the core prototype as solo work.
+Refract was developed collaboratively by **Vladimir Dukkardt and Kevin Zhu**. The original development history remains available in [`VDuckardtt/refract`](https://github.com/VDuckardtt/refract). This portfolio repository preserves that boundary rather than presenting the core prototype as solo work.
 
 The project developed in stages: a collaborative prototype and technical exploration, exploratory user testing, interface and usability refinement, desktop productization, then public browser adaptation, documentation, and verification.
 
