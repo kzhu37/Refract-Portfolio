@@ -19,11 +19,14 @@ export interface FullPrescription {
   binocularPD: number
   measuredAt: Date
   source: 'exam' | 'manual' | 'imported'
-  /** 0-1 confidence from in-app exam. null when source !== 'exam' */
-  examConfidence: number | null
+  /**
+   * Legacy persistence slot. The guided workflow no longer assigns a numeric
+   * confidence score because no calibrated uncertainty model supports one.
+   */
+  examConfidence?: null
 }
 
-/** PSF (Point Spread Function) kernel - describes how this eye blurs light */
+/** PSF (Point Spread Function) kernel: describes how this eye blurs light */
 export interface PSFKernel {
   /** Float32Array serialized to number[] for IPC transport */
   kernelData: number[]
@@ -50,8 +53,11 @@ export interface GazePoint {
   x: number
   y: number
   timestamp: number
-  /** 0-1 confidence reported by the active gaze tracker */
-  confidence: number
+  /**
+   * Optional quality signal reserved for trackers that can define and compute
+   * one. The current iris tracker intentionally does not invent a fixed score.
+   */
+  confidence?: number
 }
 
 export interface ExamResult {
