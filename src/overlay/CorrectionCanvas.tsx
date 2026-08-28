@@ -5,9 +5,8 @@ import { DesktopCapturer } from './lib/capture/desktop-capturer'
 import { AdaptiveQuality } from './lib/quality/adaptive-quality'
 
 /**
- * The correction canvas is the overlay. It lives in the transparent,
- * click-through overlay window and does one high-frequency job: pull the live
- * screen capture, run the gaze-contingent correction shader, and paint the
+ * The correction canvas is the transparent desktop overlay. It pulls the live
+ * screen capture, runs the gaze-contingent correction shader, and paints the
  * result full-screen.
  *
  * It holds no UI and no application store. Everything that drives a frame
@@ -109,9 +108,9 @@ const CorrectionCanvas: React.FC = () => {
 
     const frameTime = performance.now() - frameStart
     quality.recordFrame(frameTime)
-    if (quality.shouldReduce()) {
-      // Adaptive-quality feedback is measured here. Resolution changes remain
-      // future prototype work, so this hook intentionally has no UI control.
+    if (quality.isSustainedOverBudget()) {
+      // The current prototype records this condition only. Automatic capture
+      // resolution adjustment remains future work and is not implied here.
     }
   }
 

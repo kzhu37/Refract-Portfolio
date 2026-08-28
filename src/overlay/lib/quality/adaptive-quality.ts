@@ -1,25 +1,21 @@
 /**
- * Adaptive quality governor for the correction render loop.
+ * Frame-time monitor for the correction render loop.
  *
- * The convolution pass cost scales with capture resolution and kernel size, so
- * on weaker GPUs the loop can blow past the per-frame budget and the corrected
- * image starts to lag the live desktop. This class watches a short rolling
- * window of frame times and, when the average is sustained over budget, signals
- * that the pipeline should drop a quality tier (the main process then lowers the
- * capture resolution on the next state push).
+ * Convolution cost scales with capture resolution and kernel size. This class
+ * records a short rolling window of render times and reports when the average
+ * remains above the target budget. The current prototype uses that signal for
+ * instrumentation only. It does not automatically change capture resolution or
+ * claim to provide an adaptive-resolution system.
  *
- * Two guards prevent thrashing:
- *   - a full window must accumulate before any decision is made, so a single
- *     hitch (GC pause, window resize) never triggers a downgrade;
- *   - a cooldown after each decision gives the new resolution time to settle
- *     before we measure again.
+ * A full window prevents one-off hitches from triggering an over-budget signal.
+ * A cooldown prevents the caller from receiving the same signal every frame.
  */
 export class AdaptiveQuality {
   private readonly budgetMs: number
   private readonly windowSize: number
   private readonly cooldownMs: number
   private readonly frameTimes: number[] = []
-  private lastDecisionAt = 0
+  private lastSignalAt = 0
 
   constructor(targetFps = 60, windowSize = 30, cooldownMs = 1000) {
     this.budgetMs = 1000 / targetFps
@@ -27,15 +23,16 @@ export class AdaptiveQuality {
     this.cooldownMs = cooldownMs
   }
 
-  /** Record one frame's wall-clock render time (ms). */
+  /** Record one frame's wall-clock render time in milliseconds. */
   recordFrame(frameTimeMs: number): void {
+    if (!Number.isFinite(frameTimeMs) || frameTimeMs < 0) return
     this.frameTimes.push(frameTimeMs)
     if (this.frameTimes.length > this.windowSize) {
       this.frameTimes.shift()
     }
   }
 
-  /** Rolling average frame time (ms), or 0 before any frames are recorded. */
+  /** Rolling average frame time, or 0 before any frames are recorded. */
   averageFrameTime(): number {
     if (this.frameTimes.length === 0) return 0
     let sum = 0
@@ -44,18 +41,18 @@ export class AdaptiveQuality {
   }
 
   /**
-   * True when sustained frame time exceeds 1.25× budget and the cooldown has
-   * elapsed. Resets the window after returning true so the next decision is
-   * based on fresh measurements at the new quality tier.
+   * Report sustained over-budget rendering after a full measurement window.
+   * Returning true does not change quality settings. The caller may log or use
+   * the signal in future adaptive-resolution work.
    */
-  shouldReduce(): boolean {
+  isSustainedOverBudget(): boolean {
     if (this.frameTimes.length < this.windowSize) return false
 
     const now = performance.now()
-    if (now - this.lastDecisionAt < this.cooldownMs) return false
+    if (now - this.lastSignalAt < this.cooldownMs) return false
 
     if (this.averageFrameTime() > this.budgetMs * 1.25) {
-      this.lastDecisionAt = now
+      this.lastSignalAt = now
       this.frameTimes.length = 0
       return true
     }
@@ -63,7 +60,7 @@ export class AdaptiveQuality {
     return false
   }
 
-  /** Discard the current window (e.g. after a resolution change). */
+  /** Discard the current measurement window. */
   reset(): void {
     this.frameTimes.length = 0
   }

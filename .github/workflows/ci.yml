@@ -24,7 +24,7 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Verify portfolio presentation
+      - name: Verify portfolio presentation and claim boundaries
         run: |
           node <<'NODE'
           const fs = require('fs')
@@ -74,6 +74,30 @@ jobs:
           const shader = fs.readFileSync('src/overlay/lib/webgl/correction-shader.ts', 'utf8')
           if (shader.includes('u_zoom')) {
             console.error('Correction shader still contains magnification state')
+            process.exit(1)
+          }
+
+          const prescription = fs.readFileSync('src/renderer/lib/optics/prescription.ts', 'utf8')
+          if (/confidence\s*[+\-]=|round2\(confidence\)|Base 0\.65/i.test(prescription)) {
+            console.error('Guided workflow contains unsupported numeric confidence scoring')
+            process.exit(1)
+          }
+
+          const gaze = fs.readFileSync('src/renderer/lib/eyetracking/iris-gaze.ts', 'utf8')
+          const unsupportedGazeClaims = [
+            /confidence\s*:\s*0\.9/,
+            /use a head-pose-invariant/i,
+            /head-pose-invariant gaze feature/i,
+            /accurate degree-2 polynomial/i,
+          ]
+          if (unsupportedGazeClaims.some((pattern) => pattern.test(gaze))) {
+            console.error('Gaze tracker contains an unsupported confidence or invariance claim')
+            process.exit(1)
+          }
+
+          const quality = fs.readFileSync('src/overlay/lib/quality/adaptive-quality.ts', 'utf8')
+          if (/main process then lowers the capture resolution/i.test(quality)) {
+            console.error('Frame-time monitor overstates automatic quality adjustment')
             process.exit(1)
           }
 
