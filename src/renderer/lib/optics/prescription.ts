@@ -74,19 +74,15 @@ const SNELLEN_TABLE: readonly [denominator: number, sphere: number][] = [
 export function snellenToSphere(snellenDenominator: number): number {
   const denom = Math.max(20, snellenDenominator)
 
-  // Exact match
   const exact = SNELLEN_TABLE.find(([d]) => d === denom)
   if (exact) return exact[1]
 
-  // Below the first entry - vision better than 20/20, assume emmetropia
   if (denom < SNELLEN_TABLE[0][0]) return 0.0
 
-  // Above the last entry - very poor acuity, clamp to worst entry
   if (denom > SNELLEN_TABLE[SNELLEN_TABLE.length - 1][0]) {
     return SNELLEN_TABLE[SNELLEN_TABLE.length - 1][1]
   }
 
-  // Linear interpolation between surrounding entries
   for (let i = 0; i < SNELLEN_TABLE.length - 1; i++) {
     const [d0, s0] = SNELLEN_TABLE[i]
     const [d1, s1] = SNELLEN_TABLE[i + 1]
@@ -171,21 +167,15 @@ export function blurRadiusPixels(params: BlurRadiusParams): BlurRadius {
     return blur_m * screenPPM
   }
 
-  // Sphere-only (shared by both meridians)
   const sigmaFromSphere = defocusBlur(sphere)
 
   if (!cylinder || cylinder === 0) {
     return { sigmaX: sigmaFromSphere, sigmaY: sigmaFromSphere, angleDeg: 0 }
   }
 
-  // Astigmatic: one meridian carries sphere+cylinder, the other carries sphere
-  const sigmaAxis1 = defocusBlur(sphere + cylinder) // cylinder meridian
-  const sigmaAxis2 = sigmaFromSphere                // sphere meridian
+  const sigmaAxis1 = defocusBlur(sphere + cylinder)
+  const sigmaAxis2 = sigmaFromSphere
 
-  // axis is the angle of the cylinder (1-180°).
-  // The blur ellipse major axis aligns with the less-blurred meridian.
-  // We rotate by (axis - 90) to convert from clinical axis convention
-  // (0° = horizontal) to the image coordinate system (0° = x-axis).
   const rawAxis = axis ?? 0
   const angleDeg = ((rawAxis - 90) % 180 + 180) % 180
 
@@ -206,71 +196,48 @@ export interface CalibrationData {
 }
 
 /**
- * Combine OD and OS exam results into a complete FullPrescription estimate.
+ * Combine OD and OS guided-workflow results into prototype input values.
  *
- * Cylinder is always returned in minus-cylinder form (negative value).
- * astigmatismAngle is treated as a clinical axis in degrees [1, 180].
- * Binocular PD defaults to 63 mm (population average; user can refine in Settings).
+ * Cylinder is returned in minus-cylinder form. astigmatismAngle is treated as
+ * a clinical axis in degrees [1, 180]. Binocular PD defaults to 63 mm and can
+ * be replaced with a measured value in Settings.
  *
- * Confidence scoring (0-1):
- *   Base 0.65, adjusted by:
- *   +0.15  both eyes 20/50 or better  (more test rows completed)
- *   +0.05  at least one eye 20/100 or better
- *   +0.10  pixel density within 15 % of 96-DPI reference (good physical calibration)
- *   -0.20  cylinder ≥ 0.75 D  (behavioural astigmatism test is coarse)
- *   -0.10  cylinder ≥ 0.375 D
- *   Clamped to [0.20, 0.95].
+ * No numeric confidence is generated. The workflow has not been calibrated
+ * against professional refraction measurements, so assigning a probability or
+ * error bound would overstate what the prototype establishes.
  */
 export function examResultsToPrescription(
   OD: ExamResult,
   OS: ExamResult,
   calibration: CalibrationData
 ): FullPrescription {
+  void calibration
+
   const buildEyeRx = (result: ExamResult): EyePrescription => {
     const rawCyl = result.estimatedCylinder
     const hasCyl = rawCyl !== null && rawCyl !== 0
 
     return {
-      sphere:   snellenToSphere(result.snellenLine),
-      // Minus-cylinder convention: cylinder is always ≤ 0
+      sphere: snellenToSphere(result.snellenLine),
       cylinder: hasCyl ? -Math.abs(rawCyl) : null,
-      // astigmatismAngle stored in degrees; normalise to [1, 180]
       axis: hasCyl && result.astigmatismAngle !== null
         ? (Math.round(((result.astigmatismAngle % 180) + 180) % 180) || 1)
         : null,
       add: null,
-      pd:  31.5, // monocular half of 63 mm population-default binocular PD
+      pd: 31.5,
     }
   }
 
   const odRx = buildEyeRx(OD)
   const osRx = buildEyeRx(OS)
 
-  // -- Confidence ----------------------------------------------------------
-  let confidence = 0.65
-
-  const avgDenom = (OD.snellenLine + OS.snellenLine) / 2
-  if (avgDenom <= 50)       confidence += 0.15
-  else if (avgDenom <= 100) confidence += 0.05
-
-  // Calibration quality: reference is ~3.78 px/mm at 96 DPI
-  const drift = Math.abs(calibration.pixelsPerMm - 3.78) / 3.78
-  if (drift < 0.15) confidence += 0.10
-
-  // Behavioural astigmatism testing is less precise than Snellen
-  const maxCyl = Math.max(Math.abs(odRx.cylinder ?? 0), Math.abs(osRx.cylinder ?? 0))
-  if (maxCyl >= 0.75)       confidence -= 0.20
-  else if (maxCyl >= 0.375) confidence -= 0.10
-
-  confidence = Math.min(0.95, Math.max(0.20, confidence))
-
   return {
     OD: odRx,
     OS: osRx,
-    binocularPD: 63, // population default; user prompted to update in Settings
-    measuredAt:  new Date(),
-    source:      'exam',
-    examConfidence: round2(confidence),
+    binocularPD: 63,
+    measuredAt: new Date(),
+    source: 'exam',
+    examConfidence: null,
   }
 }
 
@@ -281,9 +248,4 @@ export function examResultsToPrescription(
 /** Round to nearest 0.25 D (standard optical step). */
 function round25(value: number): number {
   return Math.round(value * 4) / 4
-}
-
-/** Round to 2 decimal places (for confidence scores). */
-function round2(value: number): number {
-  return Math.round(value * 100) / 100
 }
