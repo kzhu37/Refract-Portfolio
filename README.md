@@ -18,6 +18,11 @@
   <a href="#contribution-and-collaboration"><strong>Contribution</strong></a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/kzhu37/Refract-Portfolio/actions/workflows/ci.yml"><img alt="Portfolio CI" src="https://github.com/kzhu37/Refract-Portfolio/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/kzhu37/Refract-Portfolio/actions/workflows/production-smoke.yml"><img alt="Production browser smoke" src="https://github.com/kzhu37/Refract-Portfolio/actions/workflows/production-smoke.yml/badge.svg"></a>
+</p>
+
 Refract asks a simple question: **what if a display could adapt to the user's vision instead of making the user adapt to the display?**
 
 The full Electron prototype captures desktop content, builds an approximate refractive-blur model from prescription and physical calibration parameters, follows a cursor or calibrated gaze estimate, and applies localized GPU correction around the point of attention. Making that loop usable turned the project into an integration problem across optics, numerical methods, computer vision, desktop capture, WebGL, physical geometry, and human comfort.
@@ -48,6 +53,17 @@ The full Electron prototype captures desktop content, builds an approximate refr
   </tr>
 </table>
 
+<p align="center">
+  <a href="#at-a-glance">Overview</a> ·
+  <a href="#system-architecture">Architecture</a> ·
+  <a href="#gaze-tracking-and-calibration">Gaze</a> ·
+  <a href="#modeling-refractive-blur">Optics</a> ·
+  <a href="#interactive-browser-demo">Demo</a> ·
+  <a href="#testing-changed-the-product">Iteration</a> ·
+  <a href="#verification-and-evidence-boundaries">Verification</a> ·
+  <a href="#contribution-and-collaboration">Contribution</a>
+</p>
+
 ## At a glance
 
 | Area | Current prototype |
@@ -55,11 +71,11 @@ The full Electron prototype captures desktop content, builds an approximate refr
 | **Core idea** | Preprocess display content so the screen can partially compensate for modeled visual blur |
 | **Technical centerpiece** | A gaze-aware or cursor-aware WebGL2 correction region rendered through a transparent, click-through Electron overlay |
 | **Optical model** | Sphere, cylinder, axis, viewing distance, screen scale, and pupil assumptions become a rotated anisotropic Gaussian point spread function |
-| **Tracking** | MediaPipe iris landmarks, eye-relative features, 3 x 3 polynomial calibration, validation, and Kalman smoothing |
+| **Tracking** | MediaPipe iris landmarks, eye-relative features, 3 x 3 calibration grid, degree-2 polynomial mapping, validation, and Kalman smoothing |
 | **Desktop systems** | Screen capture, protected overlay, IPC, persistence, tray controls, global shortcuts, and packaging |
-| **Live renderer contract** | The active GPU path accepts validated odd kernels up to 15 x 15; larger kernels remain experimental/offline only |
-| **Verification** | Focused numerical and renderer invariants, TypeScript checks, desktop and browser builds, plus deployed interaction smoke tests |
-| **Kevin's focus** | Product evaluation and iteration, interface/usability refinement, desktop productization, public browser adaptation, technical documentation, and verification |
+| **Live renderer contract** | The active GPU path accepts validated odd kernels up to 15 x 15; larger kernels remain experimental or offline only |
+| **Verification** | 13 deterministic numerical and calibration checks, TypeScript checks, desktop and browser builds, and deployed interaction smoke tests |
+| **Kevin's focus** | Product evaluation and iteration, interface and usability refinement, desktop productization, public browser adaptation, technical documentation, and verification |
 | **Project type** | Collaborative experimental engineering prototype with later public refinement |
 
 ## Why Refract
@@ -118,7 +134,7 @@ A mathematically stronger filter is not automatically a better human-facing resu
 
 Cursor tracking is the default because it works immediately and requires no camera. Eye tracking is optional and adds a harder calibration problem.
 
-MediaPipe Face Mesh supplies iris and eye-corner landmarks, but Refract does not treat those landmarks as a finished gaze estimate. In [`iris-gaze.ts`](src/renderer/lib/eyetracking/iris-gaze.ts), each iris center is measured **relative to the midpoint and width of its eye corners**. That eye-relative feature reduces sensitivity to head translation and viewing-distance changes compared with regressing directly on raw camera pixels.
+MediaPipe Face Mesh supplies iris and eye-corner landmarks, but Refract does not treat those landmarks as a finished gaze estimate. In [`iris-gaze.ts`](src/renderer/lib/eyetracking/iris-gaze.ts), each iris center is measured **relative to the midpoint and width of its eye corners**. That eye-relative feature reduces sensitivity to head translation and viewing-distance changes compared with regressing directly on raw camera pixels. It does not make the tracker invariant to head pose, lighting, camera position, or individual eye geometry.
 
 Desktop calibration uses a 3 x 3 screen grid. Each target records the median of several recent feature samples to reduce the influence of blinks and small involuntary movements. Refract then builds degree-2 polynomial features:
 
@@ -128,7 +144,7 @@ Desktop calibration uses a 3 x 3 screen grid. Each target records the median of 
 
 Separate horizontal and vertical mappings are fitted with least squares. The normal equations are solved by a custom Gauss-Jordan routine with partial pivoting, while feature centering and scaling improve numerical conditioning. Runtime predictions pass through the constant-velocity Kalman smoother in [`gaze-smoother.ts`](src/renderer/lib/eyetracking/gaze-smoother.ts).
 
-Four validation targets estimate mean screen-space error. The result is reported as validation error rather than a claim of physiological tracking accuracy, and recalibration remains available when the correction region drifts.
+Four validation targets estimate mean screen-space error. Refract reports that directly rather than assigning a fabricated physiological tracking-confidence score. Recalibration remains available when the correction region drifts.
 
 ## Modeling refractive blur
 
@@ -199,7 +215,7 @@ Refract can begin from a known prescription, but it also contains an experimenta
   </tr>
 </table>
 
-The workflow includes viewing-distance calibration, physical screen calibration using a known-size reference, Snellen-style acuity testing, astigmatism clock and fan interfaces, and contrast comparison. Its acuity-to-sphere mapping is a prototype interaction heuristic, not a validated way to infer refraction from Snellen acuity. The results screen labels the output as a guided estimate, avoids unsupported confidence and error-bound claims, and directs users toward measured values when available.
+The workflow includes viewing-distance calibration, physical screen calibration using a known-size reference, Snellen-style acuity testing, astigmatism clock and fan interfaces, and contrast comparison. Its acuity-to-sphere mapping is a prototype interaction heuristic, not a validated way to infer refraction from Snellen acuity. The results screen labels the output as a guided estimate, and the active code no longer assigns a numeric confidence or error bound that the prototype has not been calibrated to support.
 
 Physical calibration remains an important engineering constraint. A letter occupying the same number of CSS pixels can have very different real-world dimensions on two monitors, so screen geometry and viewing conditions belong inside the model rather than only in setup instructions.
 
@@ -223,9 +239,9 @@ One glasses-wearing tester described the result as **"promising, but not quite l
 
 The testing was exploratory and subjective. It was not controlled clinical validation. Earlier presentation work included survey figures, but this public repository does not repeat those numbers because the retained material does not establish a sufficiently precise denominator, question wording, and methodology for a defensible technical claim.
 
-## Verification and scope
+## Verification and evidence boundaries
 
-`npm test` compiles and runs ten deterministic checks covering:
+`npm test` compiles and runs 13 deterministic checks covering:
 
 - anisotropic Gaussian normalization and invalid-input guards
 - identity behavior for an emmetropic prescription
@@ -236,10 +252,15 @@ The testing was exploratory and subjective. It was not controlled clinical valid
 - prescription cylinder-form normalization
 - single strength semantics for the active correction kernel
 - Kalman gaze-smoother stability and reset behavior
+- the guided workflow boundary that prevents unsupported numeric confidence scoring
+- recovery of a known degree-2 gaze mapping from deterministic calibration samples
+- rejection of degenerate polynomial gaze-calibration data
 
 GitHub Actions separately type-checks the Node, renderer, and browser targets, runs the numerical suite, builds the Electron application and browser demo, verifies portfolio media and writing constraints, and exercises the deployed browser interaction.
 
 The production smoke path requires WebGL2, checks that pointer movement changes the correction-stage output, exercises correction toggling, presets, reset behavior, responsive layout, fallback behavior, camera-consent UI, and deep-link loading, and fails on severe browser-console errors.
+
+The CI quality gate also checks evidence discipline. It rejects broken README media references, hidden shader magnification, unsupported guided-workflow confidence scoring, hardcoded gaze confidence, overstated gaze-invariance language, and claims that frame-time monitoring already performs automatic resolution adjustment.
 
 ### Current limitations
 
@@ -251,7 +272,7 @@ Refract remains a proof of concept with clear boundaries:
 - the application computes separate OD and OS optical states, but the screen-level renderer applies one selected eye profile at a time rather than simultaneous binocular per-eye correction
 - guided acuity, astigmatism, and contrast stages are heuristic prototype inputs, not prescription estimation
 - automatic live kernels are intentionally bounded to 15 x 15 for the current shader architecture
-- adaptive-quality monitoring exists, but automatic resolution adjustment is not yet user-facing
+- frame-time monitoring exists, but automatic capture-resolution adjustment is not implemented
 - MediaPipe runtime assets are loaded from a CDN
 - user testing was exploratory rather than controlled clinical evaluation
 
@@ -268,6 +289,7 @@ The strongest next work is measurement and validation, not adding more controls:
 | Renderer/model mismatch risk | Share and validate a 15 x 15 live-kernel contract | Prevents a numerical kernel from silently exceeding shader capacity |
 | Demo effects that could overstate correction | Remove hidden focal magnification, brightness-only fallbacks, and simulated guided-result before/after effects | Keeps visible evidence aligned with the actual renderer |
 | Prototype controls that could overstate functionality | Expose only controls wired to active runtime behavior and label heuristic outputs explicitly | Keeps the interface aligned with implementation and evidence |
+| Unsupported quantitative certainty | Report measured screen-space calibration error directly and avoid invented confidence scores | Separates observable prototype behavior from claims the system has not validated |
 
 ## What I learned
 
@@ -297,7 +319,7 @@ The strongest next work is measurement and validation, not adding more controls:
 | Computational optics | Directional Gaussian PSFs, normalized unsharp correction, experimental Wiener deconvolution |
 | Desktop integration | IPC, transparent overlay, desktop capture, tray controls, global shortcuts |
 | Packaging | Electron Builder, Windows NSIS, macOS DMG, Linux AppImage |
-| Verification | TypeScript checks, focused numerical tests, GitHub Actions, production browser smoke testing |
+| Verification | TypeScript checks, deterministic numerical and calibration tests, GitHub Actions, production browser smoke testing |
 
 </details>
 
@@ -365,13 +387,13 @@ src/
   preload/              Context-isolated Electron bridges
   renderer/
     components/         Calibration, vision, and correction UI
-    lib/eyetracking/     Iris tracking, calibration, smoothing
+    lib/eyetracking/     Iris tracking, polynomial calibration, smoothing
     lib/optics/          Prescription model, PSF, Wiener experiment
     lib/store/           Renderer state
     pages/               Main application screens
   shared/                Cross-layer live renderer contracts
 web-demo/                Interactive browser adaptation
-tests/                   Focused numerical and renderer verification
+tests/                   Deterministic numerical and calibration verification
 docs/
   OPTICAL_MODEL.md       Model assumptions, evidence boundaries, references
   media/                 Screenshots, motion proof, and technical diagrams
