@@ -25,33 +25,23 @@
 
 Refract asks a simple question: **what if a display could adapt to the user's vision instead of making the user adapt to the display?**
 
-The full Electron prototype captures desktop content, builds an approximate refractive-blur model from prescription and physical calibration parameters, follows a cursor or calibrated gaze estimate, and applies localized GPU correction around the point of attention. Making that loop usable turned the project into an integration problem across optics, numerical methods, computer vision, desktop capture, WebGL, physical geometry, and human comfort.
+The full Electron prototype captures desktop content, turns prescription and physical calibration inputs into an approximate refractive-blur model, follows a cursor or calibrated gaze estimate, and applies localized GPU correction around the point of attention. Building that loop made Refract an integration problem across optics, numerical methods, computer vision, desktop capture, WebGL, physical geometry, and human comfort.
 
 > [!IMPORTANT]
 > **Refract is an experimental research and engineering prototype.** It is not a medical device, clinical diagnostic tool, prescription estimator, or replacement for glasses, contact lenses, professional eye examinations, or other vision care. The guided workflow produces heuristic prototype inputs only.
 
 <p align="center">
-  <img src="docs/media/refract-correction-demo.gif" alt="Refract browser demo showing the real localized WebGL2 correction region moving across detailed content and switching to a directional prescription preset" width="94%">
+  <img src="docs/media/refract-desktop-overlay.gif" alt="Refract Electron desktop prototype applying the localized correction overlay to a controlled high-detail desktop scene as the system cursor moves" width="94%">
 </p>
-<p align="center"><sub><strong>Live renderer evidence:</strong> captured from the real browser build. The pointer moves the localized correction region, the demo switches to a directional prescription, and the original source is briefly revealed for comparison.</sub></p>
+<p align="center"><sub><strong>Desktop system proof:</strong> captured from the real Electron build. The transparent correction overlay is enabled through the application, then the system cursor moves the localized region across captured desktop content. The desktop renderer uses the standard correction path with no browser-only visibility enhancement.</sub></p>
 
 > [!NOTE]
 > **Collaborative project:** Refract's core prototype was developed with Vlad Duckardt. My later work focused on product evaluation and feedback-driven iteration, interface and usability refinement, desktop productization, the public browser adaptation, technical documentation, and automated verification. The original source history and specific contribution record are preserved in [Contribution and collaboration](#contribution-and-collaboration).
 
-<table>
-  <tr>
-    <td width="50%">
-      <img src="docs/media/refract-home.png" alt="Refract Electron desktop application home screen">
-    </td>
-    <td width="50%">
-      <img src="docs/media/browser-demo-original.webp" alt="Refract interactive browser demonstration with the original detail workspace visible">
-    </td>
-  </tr>
-  <tr>
-    <td align="center"><sub><strong>Full desktop prototype:</strong> capture, calibration, persistent settings, tray controls, shortcuts, and a transparent correction overlay.</sub></td>
-    <td align="center"><sub><strong>Public browser demo:</strong> the same browser-compatible optical model and WebGL2 renderer applied only to page-owned content.</sub></td>
-  </tr>
-</table>
+<p align="center">
+  <img src="docs/media/refract-home.png" alt="Refract Electron desktop application home screen" width="86%">
+</p>
+<p align="center"><sub><strong>Desktop application:</strong> correction controls, calibration, persistent settings, tray behavior, shortcuts, and the transparent overlay.</sub></p>
 
 <p align="center">
   <a href="#at-a-glance">Overview</a> ·
@@ -59,7 +49,7 @@ The full Electron prototype captures desktop content, builds an approximate refr
   <a href="#gaze-tracking-and-calibration">Gaze</a> ·
   <a href="#modeling-refractive-blur">Optics</a> ·
   <a href="#interactive-browser-demo">Demo</a> ·
-  <a href="#testing-changed-the-product">Iteration</a> ·
+  <a href="#development-and-iteration">Iteration</a> ·
   <a href="#verification-and-evidence-boundaries">Verification</a> ·
   <a href="#contribution-and-collaboration">Contribution</a>
 </p>
@@ -82,7 +72,7 @@ The full Electron prototype captures desktop content, builds an approximate refr
 
 Glasses correct light after it leaves a display. Refract explores the inverse engineering idea: whether displayed content can be preprocessed so some modeled optical blur is partially compensated before the image reaches the eye.
 
-A useful prototype had to connect pixels to physical screen dimensions, account for viewing distance, translate prescription values into directional blur, follow a point of attention, process changing desktop content continuously, prevent its own overlay from feeding back into screen capture, control artifacts, and remain comfortable enough to test.
+A usable prototype had to connect pixels to physical screen dimensions, account for viewing distance, translate prescription values into directional blur, follow a point of attention, process changing desktop content continuously, prevent its own overlay from feeding back into screen capture, control artifacts, and remain comfortable enough to test.
 
 That created six connected engineering problems:
 
@@ -115,7 +105,7 @@ The difficult part is feedback. If desktop capture includes Refract's own overla
 
 The high-frequency path lives in [`CorrectionCanvas.tsx`](src/overlay/CorrectionCanvas.tsx), [`webgl-utils.ts`](src/overlay/lib/webgl/webgl-utils.ts), and [`correction-shader.ts`](src/overlay/lib/webgl/correction-shader.ts).
 
-The active shader keeps **optical correction separate from magnification**. The focal region applies the correction kernel to the original sampling coordinates rather than quietly enlarging the image. It also:
+The active desktop shader keeps **optical correction separate from magnification**. It also:
 
 - fades correction smoothly outside the focal region instead of ending at a hard boundary
 - changes luminance while retaining source chroma to reduce color fringing
@@ -180,22 +170,6 @@ It pads and shifts the PSF, performs a custom separable 2D discrete Fourier tran
 
 Keeping experimental work separate from active behavior is intentional. The interface should describe what the renderer actually does, not everything the codebase has explored.
 
-## Interactive browser demo
-
-The public demo reuses Refract's browser-compatible PSF generation, correction-kernel generation, WebGL utilities, GLSL shader, and optional iris tracker. Cursor tracking works immediately. Camera gaze is opt-in, and denial or missing hardware falls back cleanly to cursor mode.
-
-The browser changes the input boundary, not the claimed optical pipeline. It processes only a page-owned detail canvas because a normal web page cannot capture arbitrary desktop content or place Refract's transparent overlay above other applications.
-
-The current demo is intentionally conservative:
-
-- no hidden magnification is applied to make correction appear stronger
-- no brightness-only substitute is shown when a valid kernel is missing
-- browser camera video stays in the tab and is not uploaded, recorded, or persisted
-- the browser uses a documented 96-DPI physical-scale fallback because it cannot reliably know monitor pixel density
-- the full 3 x 3 gaze-calibration flow remains a desktop feature
-
-**Try it:** <https://refract-portfolio.vercel.app>
-
 ## Guided vision workflow
 
 Refract can begin from a known prescription, but it also contains an experimental guided workflow for users who do not start with one. This is a calibration and interaction experiment, not a clinical eye examination.
@@ -217,9 +191,39 @@ Refract can begin from a known prescription, but it also contains an experimenta
 
 The workflow includes viewing-distance calibration, physical screen calibration using a known-size reference, Snellen-style acuity testing, astigmatism clock and fan interfaces, and contrast comparison. Its acuity-to-sphere mapping is a prototype interaction heuristic, not a validated way to infer refraction from Snellen acuity. The results screen labels the output as a guided estimate, and the active code no longer assigns a numeric confidence or error bound that the prototype has not been calibrated to support.
 
-Physical calibration remains an important engineering constraint. A letter occupying the same number of CSS pixels can have very different real-world dimensions on two monitors, so screen geometry and viewing conditions belong inside the model rather than only in setup instructions.
+Physical calibration matters because the same number of CSS pixels can represent very different real-world sizes on different displays. Screen geometry and viewing conditions therefore belong inside the model rather than only in setup instructions.
 
-## Testing changed the product
+## Interactive browser demo
+
+<p align="center">
+  <img src="docs/media/refract-correction-demo.gif" alt="Refract browser demo showing the localized correction region moving across detailed content and switching to a directional prescription preset" width="94%">
+</p>
+<p align="center"><sub><strong>Public browser proof:</strong> the pointer moves the focal region, the demo switches prescription presets, and the original source can be revealed for comparison. The browser build intentionally adds displaced luma edge copies to make the pre-correction pattern easier to inspect. That browser-only visibility enhancement is disabled in the Electron desktop renderer.</sub></p>
+
+The public demo reuses Refract's browser-compatible prescription conversion, PSF generation, correction-kernel generation, WebGL utilities, GLSL shader, and optional iris tracker. Cursor tracking works immediately. Camera gaze is opt-in, and denial or missing hardware falls back cleanly to cursor mode.
+
+The browser changes the **capture boundary** and adds a clearly scoped visibility aid. It processes only a page-owned detail canvas because a normal web page cannot capture arbitrary desktop content or place Refract's transparent overlay above other applications.
+
+The demo keeps several evidence boundaries explicit:
+
+- the extra browser edge-separation visualization is a browser-only aid, not part of the desktop correction path
+- no magnification is mixed into the correction effect
+- no brightness-only substitute is shown when a valid kernel is missing
+- browser camera video stays in the tab and is not uploaded, recorded, or persisted
+- the browser uses a documented 96-DPI physical-scale fallback because it cannot reliably know monitor pixel density
+- the full 3 x 3 gaze-calibration flow remains a desktop feature
+
+**Try it:** <https://refract-portfolio.vercel.app>
+
+## Development and iteration
+
+<p align="center">
+  <img src="docs/media/development-arc.svg" alt="Refract development timeline from collaborative core prototype through testing, interface refinement, productization, and public verification" width="100%">
+</p>
+
+The project did not end when the first technical loop worked. It developed through a collaborative prototype, exploratory user testing, interface and accessibility refinement, desktop productization, and a public browser adaptation backed by stronger documentation and automated verification.
+
+### Testing changed the product
 
 <p align="center">
   <img src="docs/media/user-testing.svg" alt="Refract feedback-driven iteration showing changes to calibration language, comparison, reversibility, comfort, and physical setup" width="100%">
@@ -237,7 +241,7 @@ Exploratory user testing exposed problems that code review could not reveal.
 
 One glasses-wearing tester described the result as **"promising, but not quite like my glasses."** That feedback was useful because it separated a visible effect from genuine effectiveness and pushed the project toward clearer limits, better setup, and more meaningful success criteria.
 
-The testing was exploratory and subjective. It was not controlled clinical validation. Earlier presentation work included survey figures, but this public repository does not repeat those numbers because the retained material does not establish a sufficiently precise denominator, question wording, and methodology for a defensible technical claim.
+The testing was exploratory and subjective. It was not controlled clinical validation. Earlier presentation work included survey figures, but this repository does not repeat those numbers because the retained material does not establish a sufficiently precise denominator, question wording, and methodology for a defensible technical claim.
 
 ## Verification and evidence boundaries
 
@@ -275,6 +279,7 @@ Refract remains a proof of concept with clear boundaries:
 - frame-time monitoring exists, but automatic capture-resolution adjustment is not implemented
 - MediaPipe runtime assets are loaded from a CDN
 - user testing was exploratory rather than controlled clinical evaluation
+- the browser demo includes an explicit visibility enhancement that is disabled in the desktop renderer
 
 The strongest next work is measurement and validation, not adding more controls: benchmark frame time and latency on defined hardware, quantify gaze-calibration error across repeated setups, compare optical models against predefined visual criteria, and expand controlled testing.
 
@@ -287,7 +292,7 @@ The strongest next work is measurement and validation, not adding more controls:
 | Sharpening artifacts and discomfort | Localize correction, blend the boundary, retain chroma, protect brightness, and keep defaults conservative | Treats perceptual quality as part of correctness |
 | Inconsistent physical display scale | Calibrate screen scale and viewing distance | Connects screen pixels to real-world geometry |
 | Renderer/model mismatch risk | Share and validate a 15 x 15 live-kernel contract | Prevents a numerical kernel from silently exceeding shader capacity |
-| Demo effects that could overstate correction | Remove hidden focal magnification, brightness-only fallbacks, and simulated guided-result before/after effects | Keeps visible evidence aligned with the actual renderer |
+| Browser visibility | Keep the stronger page-scoped edge-separation aid browser-only and disclose it explicitly | Makes the public effect inspectable without misrepresenting the desktop renderer |
 | Prototype controls that could overstate functionality | Expose only controls wired to active runtime behavior and label heuristic outputs explicitly | Keeps the interface aligned with implementation and evidence |
 | Unsupported quantitative certainty | Report measured screen-space calibration error directly and avoid invented confidence scores | Separates observable prototype behavior from claims the system has not validated |
 
@@ -405,7 +410,7 @@ scripts/                 Icon-generation tooling
 
 Refract was developed collaboratively by **Vlad Duckardt and Kevin Zhu**. The original development history remains available in [`VDuckardtt/refract`](https://github.com/VDuckardtt/refract). This portfolio repository preserves that boundary rather than presenting the core prototype as solo work.
 
-The project developed in stages: a collaborative prototype and technical exploration, exploratory user testing, interface and usability refinement, desktop productization, then public browser adaptation, documentation, and verification. My later work is documented below so the contribution boundary remains explicit.
+The project developed in stages: a collaborative prototype and technical exploration, exploratory user testing, interface and usability refinement, desktop productization, then public browser adaptation, documentation, and verification.
 
 | Area | Kevin Zhu's role |
 | --- | --- |
