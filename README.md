@@ -31,9 +31,9 @@ The full Electron prototype captures desktop content, builds an approximate refr
 > **Refract is an experimental research and engineering prototype.** It is not a medical device, clinical diagnostic tool, prescription estimator, or replacement for glasses, contact lenses, professional eye examinations, or other vision care. The guided workflow produces heuristic prototype inputs only.
 
 <p align="center">
-  <img src="docs/media/refract-desktop-overlay.gif" alt="Refract Electron desktop prototype applying the real localized correction overlay to a controlled high-detail desktop scene as the system cursor moves" width="94%">
+  <img src="docs/media/refract-correction-demo.gif" alt="Refract browser demo showing the real localized WebGL2 correction region moving across detailed content and switching to a directional prescription preset" width="94%">
 </p>
-<p align="center"><sub><strong>Desktop system proof:</strong> captured from the real Electron build against a controlled high-detail desktop scene. The actual global shortcut enables the transparent correction overlay, then the system cursor moves the localized region across the captured desktop. A deliberately strong valid model profile makes the effect visible; no magnification or simulated correction is added.</sub></p>
+<p align="center"><sub><strong>Live renderer evidence:</strong> captured from the real browser build. The pointer moves the localized correction region, the demo switches to a directional prescription, and the original source is briefly revealed for comparison.</sub></p>
 
 > [!NOTE]
 > **Collaborative project:** Refract's core prototype was developed with Vlad Duckardt. My later work focused on product evaluation and feedback-driven iteration, interface and usability refinement, desktop productization, the public browser adaptation, technical documentation, and automated verification. The original source history and specific contribution record are preserved in [Contribution and collaboration](#contribution-and-collaboration).
@@ -181,11 +181,6 @@ It pads and shifts the PSF, performs a custom separable 2D discrete Fourier tran
 Keeping experimental work separate from active behavior is intentional. The interface should describe what the renderer actually does, not everything the codebase has explored.
 
 ## Interactive browser demo
-
-<p align="center">
-  <img src="docs/media/refract-correction-demo.gif" alt="Refract browser demo showing the real localized WebGL2 correction region moving across detailed content and switching to a directional prescription preset" width="94%">
-</p>
-<p align="center"><sub><strong>Public renderer proof:</strong> captured from the real browser adaptation. The pointer moves the localized correction region, the demo switches to a directional prescription, and the original source is briefly revealed for comparison.</sub></p>
 
 The public demo reuses Refract's browser-compatible PSF generation, correction-kernel generation, WebGL utilities, GLSL shader, and optional iris tracker. Cursor tracking works immediately. Camera gaze is opt-in, and denial or missing hardware falls back cleanly to cursor mode.
 
