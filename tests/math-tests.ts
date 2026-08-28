@@ -17,7 +17,7 @@ import {
 import {
   buildFeatures,
   fitAxis,
-} from '../src/renderer/lib/eyetracking/iris-gaze'
+} from '../src/renderer/lib/eyetracking/gaze-calibration'
 import { GazeSmoother } from '../src/renderer/lib/eyetracking/gaze-smoother'
 import type { ExamResult, EyePrescription } from '../src/renderer/lib/types/prescription'
 
