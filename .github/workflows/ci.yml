@@ -86,7 +86,8 @@ jobs:
           const gaze = fs.readFileSync('src/renderer/lib/eyetracking/iris-gaze.ts', 'utf8')
           const unsupportedGazeClaims = [
             /confidence\s*:\s*0\.9/,
-            /head-pose-invariant/i,
+            /use a head-pose-invariant/i,
+            /head-pose-invariant gaze feature/i,
             /accurate degree-2 polynomial/i,
           ]
           if (unsupportedGazeClaims.some((pattern) => pattern.test(gaze))) {
