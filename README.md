@@ -30,11 +30,6 @@ The full Electron prototype captures desktop content, turns prescription and phy
 > [!IMPORTANT]
 > **Refract is an experimental research and engineering prototype.** It is not a medical device, clinical diagnostic tool, prescription estimator, or replacement for glasses, contact lenses, professional eye examinations, or other vision care. The guided workflow produces heuristic prototype inputs only.
 
-<p align="center">
-  <img src="docs/media/refract-desktop-overlay.gif" alt="Refract Electron desktop prototype applying the localized correction overlay to a controlled high-detail desktop scene as the system cursor moves" width="94%">
-</p>
-<p align="center"><sub><strong>Desktop system proof:</strong> captured from the real Electron build. The transparent correction overlay is enabled through the application, then the system cursor moves the localized region across captured desktop content. The desktop renderer uses the standard correction path with no browser-only visibility enhancement.</sub></p>
-
 > [!NOTE]
 > **Collaborative project:** Refract's core prototype was developed with Vlad Duckardt. My later work focused on product evaluation and feedback-driven iteration, interface and usability refinement, desktop productization, the public browser adaptation, technical documentation, and automated verification. The original source history and specific contribution record are preserved in [Contribution and collaboration](#contribution-and-collaboration).
 
@@ -198,7 +193,7 @@ Physical calibration matters because the same number of CSS pixels can represent
 <p align="center">
   <img src="docs/media/refract-correction-demo.gif" alt="Refract browser demo showing the localized correction region moving across detailed content and switching to a directional prescription preset" width="94%">
 </p>
-<p align="center"><sub><strong>Public browser proof:</strong> the pointer moves the focal region, the demo switches prescription presets, and the original source can be revealed for comparison. The browser build intentionally adds displaced luma edge copies to make the pre-correction pattern easier to inspect. That browser-only visibility enhancement is disabled in the Electron desktop renderer.</sub></p>
+<p align="center"><sub><strong>Browser demo:</strong> move the pointer to shift the focal region, switch between prescription presets, or reveal the original source for comparison. The browser build intentionally adds displaced luma edge copies to make the pre-correction pattern easier to inspect. That visibility enhancement is disabled in the Electron desktop renderer.</sub></p>
 
 The public demo reuses Refract's browser-compatible prescription conversion, PSF generation, correction-kernel generation, WebGL utilities, GLSL shader, and optional iris tracker. Cursor tracking works immediately. Camera gaze is opt-in, and denial or missing hardware falls back cleanly to cursor mode.
 
@@ -268,7 +263,7 @@ The CI quality gate also checks evidence discipline. It rejects broken README me
 
 ### Current limitations
 
-Refract remains a proof of concept with clear boundaries:
+Refract remains an experimental prototype with clear boundaries:
 
 - the live optical model uses an anisotropic Gaussian PSF, not a clinically calibrated wavefront model
 - the display-space blur mapping and Gaussian representation are engineering approximations rather than a measured retinal PSF
@@ -292,7 +287,7 @@ The strongest next work is measurement and validation, not adding more controls:
 | Sharpening artifacts and discomfort | Localize correction, blend the boundary, retain chroma, protect brightness, and keep defaults conservative | Treats perceptual quality as part of correctness |
 | Inconsistent physical display scale | Calibrate screen scale and viewing distance | Connects screen pixels to real-world geometry |
 | Renderer/model mismatch risk | Share and validate a 15 x 15 live-kernel contract | Prevents a numerical kernel from silently exceeding shader capacity |
-| Browser visibility | Keep the stronger page-scoped edge-separation aid browser-only and disclose it explicitly | Makes the public effect inspectable without misrepresenting the desktop renderer |
+| Browser visibility | Keep the stronger page-scoped edge-separation aid browser-only and disclose it explicitly | Makes the public effect easier to inspect while keeping it separate from the desktop renderer |
 | Prototype controls that could overstate functionality | Expose only controls wired to active runtime behavior and label heuristic outputs explicitly | Keeps the interface aligned with implementation and evidence |
 | Unsupported quantitative certainty | Report measured screen-space calibration error directly and avoid invented confidence scores | Separates observable prototype behavior from claims the system has not validated |
 
@@ -401,7 +396,7 @@ web-demo/                Interactive browser adaptation
 tests/                   Deterministic numerical and calibration verification
 docs/
   OPTICAL_MODEL.md       Model assumptions, evidence boundaries, references
-  media/                 Screenshots, motion proof, and technical diagrams
+  media/                 Screenshots, GIFs, and technical diagrams
 resources/icons/         App and tray branding
 scripts/                 Icon-generation tooling
 ```
@@ -418,7 +413,7 @@ The project developed in stages: a collaborative prototype and technical explora
 | **Feedback-driven iteration** | Helped move comparison earlier, make reset and reversibility more visible, reduce overly aggressive defaults, and treat physical viewing conditions as system variables |
 | **Interface and usability engineering** | Completed a substantial application-wide refinement covering typography, spacing, responsive layout, navigation, accessibility semantics, help graphics, and Refract branding |
 | **Desktop productization** | Added the Refract app and tray icon system, icon-generation tooling, and Windows packaging support |
-| **Public engineering work** | Prepared the public repository, refined the browser adaptation, aligned visible controls with runtime behavior, documented model assumptions, added technical diagrams and authentic renderer evidence, and strengthened numerical and production verification |
+| **Public engineering work** | Prepared the public repository, refined the browser adaptation, aligned visible controls with runtime behavior, documented model assumptions, added technical diagrams and renderer visuals, and strengthened numerical and production verification |
 | **Core prototype** | Developed collaboratively; the original source history remains linked rather than being represented as solo work |
 
 Two source-history commits show parts of the later engineering work directly:
