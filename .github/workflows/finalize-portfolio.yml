@@ -49,6 +49,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -- .github/workflows/ci.yml
           git rm .github/workflows/finalize-portfolio.yml scripts/finalize-portfolio.py
           git add -A
           git commit -m "Polish Refract portfolio evidence and claim consistency"
