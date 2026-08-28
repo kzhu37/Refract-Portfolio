@@ -1,0 +1,232 @@
+name: Capture Refract Desktop Proof
+
+on:
+  push:
+    branches: [refract-desktop-proof]
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out capture branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install capture dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xdotool openbox imagemagick
+          python -m pip install --disable-pip-version-check pillow
+          npm ci
+
+      - name: Seed a strong but valid optical profile for capture
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/main/store/electron-store.ts')
+          text = path.read_text()
+          needle = '  prescription: null,\n'
+          replacement = '''  prescription: {
+    OD: { sphere: -4, cylinder: -2, axis: 35, add: null, pd: 31.5 },
+    OS: { sphere: -3.5, cylinder: -1.5, axis: 110, add: null, pd: 31.5 },
+    binocularPD: 63,
+    measuredAt: new Date('2026-08-27T00:00:00Z'),
+    source: 'manual',
+    examConfidence: null
+  },
+'''
+          if needle not in text:
+              raise SystemExit('Could not locate the default prescription slot')
+          text = text.replace(needle, replacement, 1)
+          text = text.replace('    correctionStrength: 0.8,', '    correctionStrength: 1.0,', 1)
+          text = text.replace('    fovealRadius: 100,', '    fovealRadius: 150,', 1)
+          path.write_text(text)
+          PY
+
+      - name: Build the real Electron application
+        run: npm run build
+
+      - name: Create controlled desktop detail scene
+        run: |
+          cat > /tmp/refract-capture-scene.html <<'HTML'
+          <!doctype html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Refract desktop capture scene</title>
+            <style>
+              * { box-sizing: border-box; }
+              html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+              body { font-family: Arial, sans-serif; background: #f7f8fc; color: #111827; }
+              header { height: 86px; padding: 22px 56px; background: #0b1022; color: white; display: flex; justify-content: space-between; align-items: center; }
+              header strong { font-size: 26px; letter-spacing: -0.02em; }
+              header span { color: #b9c7e6; font-size: 14px; }
+              main { height: calc(100% - 86px); display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 34px; padding: 38px 56px; }
+              .panel { background: white; border: 1px solid #d7dce8; border-radius: 18px; padding: 28px; box-shadow: 0 12px 30px rgba(24,34,60,.08); }
+              h1 { font-size: 38px; margin: 0 0 12px; letter-spacing: -0.035em; }
+              h2 { font-size: 19px; margin: 24px 0 10px; }
+              p { font-size: 16px; line-height: 1.58; margin: 0 0 10px; }
+              .micro { font-size: 11px; line-height: 1.35; color: #334155; column-count: 2; column-gap: 22px; }
+              .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin-top: 18px; }
+              .grid div { aspect-ratio: 1; border: 1px solid #111827; background: repeating-linear-gradient(45deg,#111827 0 1px,#fff 1px 3px); }
+              .lines { height: 230px; border-radius: 12px; border: 1px solid #cbd5e1; background: repeating-linear-gradient(0deg,#111827 0 1px,#fff 1px 5px); }
+              .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+              .card { border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; }
+              .card b { display:block; font-size: 13px; margin-bottom: 5px; }
+              .card span { font-size: 11px; line-height: 1.35; color: #475569; }
+              footer { position: fixed; bottom: 12px; right: 22px; font-size: 11px; color: #64748b; }
+            </style>
+          </head>
+          <body>
+            <header><strong>Refract desktop overlay proof</strong><span>Controlled high-detail scene for authentic Electron capture</span></header>
+            <main>
+              <section class="panel">
+                <h1>Display detail should remain readable while the correction region moves.</h1>
+                <p>This page is intentionally dense. Fine edges, small text, repeated lines, and high-frequency patterns make the localized correction pass visible without adding magnification.</p>
+                <h2>Fine text</h2>
+                <div class="micro">Computational optics connects physical viewing assumptions to a display-space point spread function. The desktop renderer captures live screen content, applies a bounded correction kernel around the current point of attention, preserves source chroma, fades the correction boundary, and leaves the rest of the desktop untouched. Cursor tracking is used here because it is deterministic and requires no camera. This capture scene exists only to make the real system behavior easy to inspect. Refract remains an experimental engineering prototype rather than a medical device or a substitute for professional vision care. The renderer is deliberately conservative because a mathematically stronger filter is not automatically a better perceptual result. Comfort, reversibility, physical scale, and evidence boundaries are part of the engineering problem.</div>
+                <div class="grid">${'<div></div>'.repeat(24)}</div>
+              </section>
+              <section class="panel">
+                <h2 style="margin-top:0">High-frequency edge field</h2>
+                <div class="lines"></div>
+                <div class="cards">
+                  <div class="card"><b>Optics</b><span>Directional Gaussian PSF from sphere, cylinder, axis, viewing distance, screen scale, and pupil assumptions.</span></div>
+                  <div class="card"><b>Tracking</b><span>Cursor or calibrated MediaPipe iris features mapped to screen coordinates and smoothed for runtime use.</span></div>
+                  <div class="card"><b>Renderer</b><span>WebGL2 convolution inside a localized focal region with transparent pixels outside the active area.</span></div>
+                  <div class="card"><b>Desktop</b><span>Electron capture, protected overlay, IPC, persistence, tray controls, shortcuts, and packaging.</span></div>
+                </div>
+              </section>
+            </main>
+            <footer>Captured from the real Electron desktop pipeline in CI.</footer>
+          </body>
+          </html>
+          HTML
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('/tmp/refract-capture-scene.html')
+          text = path.read_text()
+          text = text.replace("${'<div></div>'.repeat(24)}", '<div></div>' * 24)
+          path.write_text(text)
+          PY
+
+      - name: Run Electron under a virtual desktop and capture motion
+        run: |
+          set -euo pipefail
+          export DISPLAY=:99
+          export LIBGL_ALWAYS_SOFTWARE=1
+
+          Xvfb :99 -screen 0 1440x900x24 -ac +extension GLX +extension RANDR +render -noreset >/tmp/xvfb.log 2>&1 &
+          sleep 2
+          openbox >/tmp/openbox.log 2>&1 &
+          sleep 2
+
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          "$CHROME" --no-sandbox --disable-dev-shm-usage --disable-gpu --user-data-dir=/tmp/refract-bg --app=file:///tmp/refract-capture-scene.html --window-position=0,0 --window-size=1440,900 >/tmp/chrome.log 2>&1 &
+          sleep 4
+
+          npx electron . --no-sandbox --disable-gpu-sandbox --enable-webgl --ignore-gpu-blocklist --enable-unsafe-swiftshader --use-gl=angle --use-angle=swiftshader >/tmp/refract.log 2>&1 &
+          ELECTRON_PID=$!
+          trap 'kill "$ELECTRON_PID" 2>/dev/null || true; cat /tmp/refract.log || true' EXIT
+          sleep 10
+
+          WINDOW_ID=$(xdotool search --name 'Refract' | head -1 || true)
+          if [ -z "$WINDOW_ID" ]; then
+            echo 'Could not find the Refract main window'
+            cat /tmp/refract.log || true
+            exit 1
+          fi
+
+          xdotool windowminimize "$WINDOW_ID"
+          sleep 2
+          mkdir -p /tmp/refract-frames
+          import -window root /tmp/refract-frames/frame-00.png
+
+          xdotool key ctrl+shift+v
+          sleep 2
+
+          positions=('250 230' '470 330' '720 250' '1000 360' '1180 610' '820 680' '470 650')
+          index=1
+          for position in "${positions[@]}"; do
+            xdotool mousemove $position
+            sleep 0.55
+            printf -v frame '/tmp/refract-frames/frame-%02d.png' "$index"
+            import -window root "$frame"
+            index=$((index + 1))
+          done
+
+          xdotool key ctrl+shift+v
+          sleep 1
+          import -window root /tmp/refract-frames/frame-08.png
+
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageChops
+
+          paths = sorted(Path('/tmp/refract-frames').glob('frame-*.png'))
+          if len(paths) != 9:
+              raise SystemExit(f'Expected 9 frames, found {len(paths)}')
+
+          frames = [Image.open(path).convert('RGB') for path in paths]
+          original = frames[0]
+          corrected = frames[3]
+          diff = ImageChops.difference(original, corrected)
+          bbox = diff.getbbox()
+          if bbox is None:
+              raise SystemExit('Desktop capture did not show any correction change')
+
+          diff_gray = diff.convert('L')
+          changed = sum(1 for value in diff_gray.getdata() if value > 5)
+          total = diff_gray.width * diff_gray.height
+          ratio = changed / total
+          print(f'Changed-pixel ratio between original and corrected capture: {ratio:.4%}')
+          if ratio < 0.0005:
+              raise SystemExit('Correction change was too small to serve as credible motion proof')
+
+          prepared = []
+          for image in frames:
+              if image.width > 1280:
+                  image = image.resize((1280, round(image.height * 1280 / image.width)), Image.Resampling.LANCZOS)
+              prepared.append(image.quantize(colors=112, method=Image.Quantize.MEDIANCUT))
+
+          output = Path('docs/media/refract-desktop-overlay.gif')
+          prepared[0].save(
+              output,
+              save_all=True,
+              append_images=prepared[1:],
+              duration=[900, 560, 560, 560, 560, 560, 560, 560, 900],
+              loop=0,
+              optimize=True,
+              disposal=2,
+          )
+          print(f'Wrote {output} ({output.stat().st_size} bytes)')
+          PY
+
+          test -s docs/media/refract-desktop-overlay.gif
+
+      - name: Commit only the authentic desktop proof
+        run: |
+          git checkout -- src/main/store/electron-store.ts
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/capture-desktop-proof.yml
+          git add docs/media/refract-desktop-overlay.gif
+          git commit -m "Add authentic Refract desktop overlay proof"
+          git push origin HEAD:refract-desktop-proof
