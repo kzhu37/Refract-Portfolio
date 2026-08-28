@@ -11,6 +11,11 @@ const QUAD_VERTICES = new Float32Array([
   -1,  1,  0, 1,
 ]);
 
+// The public browser showcase deliberately exaggerates the high-pass component
+// so the localized correction is easy to inspect on ordinary displays. The
+// Electron overlay has no class marker and therefore keeps the base kernel.
+const BROWSER_DEMO_KERNEL_GAIN = 2.5;
+
 export class CorrectionRenderer {
   private canvas: HTMLCanvasElement;
   private gl: WebGL2RenderingContext;
@@ -107,7 +112,11 @@ export class CorrectionRenderer {
     const { gl } = this;
     const kernelLoc = this.uniformLocations.get('u_kernel');
     const sizeLoc = this.uniformLocations.get('u_kernelSize');
-    if (kernelLoc && kernelData.length > 0) gl.uniform1fv(kernelLoc, kernelData);
+    const uploadedKernel = this.canvas.classList.contains('correction-canvas')
+      ? amplifyKernelAroundIdentity(kernelData, kernelSize, BROWSER_DEMO_KERNEL_GAIN)
+      : kernelData;
+
+    if (kernelLoc && uploadedKernel.length > 0) gl.uniform1fv(kernelLoc, uploadedKernel);
     if (sizeLoc) gl.uniform1i(sizeLoc, kernelSize);
   }
 
@@ -176,6 +185,24 @@ export class CorrectionRenderer {
 // ---------------------------------------------------------------------------
 // Module-level helpers
 // ---------------------------------------------------------------------------
+
+function amplifyKernelAroundIdentity(
+  kernelData: Float32Array,
+  kernelSize: number,
+  gain: number,
+): Float32Array {
+  if (kernelSize < 3 || kernelData.length === 0 || gain === 1) return kernelData;
+
+  const centerIndex = Math.floor(kernelData.length / 2);
+  const amplified = new Float32Array(kernelData.length);
+
+  for (let i = 0; i < kernelData.length; i++) {
+    const identity = i === centerIndex ? 1 : 0;
+    amplified[i] = identity + gain * (kernelData[i] - identity);
+  }
+
+  return amplified;
+}
 
 export function compileShader(
   gl: WebGL2RenderingContext,

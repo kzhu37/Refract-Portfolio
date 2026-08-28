@@ -232,8 +232,8 @@ export function drawDemoScene(canvas: HTMLCanvasElement): void {
   ctx.font = '500 13px JetBrains Mono, monospace'
   ctx.fillText('PSF(x,y) = exp(-½ · rᵀΣ⁻¹r)', 420, 248)
   ctx.fillStyle = '#8badc8'
-  ctx.fillText('kernel = 2I - PSF', 420, 276)
-  ctx.fillText('strength applied once in shader', 420, 304)
+  ctx.fillText('base kernel = 2I - PSF', 420, 276)
+  ctx.fillText('browser showcase gain = 2.5x', 420, 304)
   line(ctx, 420, 324, 716, 324, 'rgba(75,138,240,0.42)')
   for (let i = 0; i < 29; i += 1) {
     const h = 4 + Math.abs(Math.sin(i * 0.82)) * 22
