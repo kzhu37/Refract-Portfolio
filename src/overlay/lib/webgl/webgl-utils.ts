@@ -11,16 +11,11 @@ const QUAD_VERTICES = new Float32Array([
   -1,  1,  0, 1,
 ]);
 
-// The public browser showcase uses the same base correction kernel as the
-// desktop renderer, then adds displaced zero-sum lobes so edge structure is
-// visibly doubled instead of reading like a bright spotlight. The Electron
-// overlay has no browser canvas class and therefore keeps the base kernel.
-const BROWSER_DEMO_BASE_GAIN = 1.25;
-const BROWSER_DEMO_PRIMARY_GHOST = 0.90;
-const BROWSER_DEMO_SECONDARY_GHOST = 0.32;
-const BROWSER_DEMO_PRIMARY_OFFSET_X = 6;
-const BROWSER_DEMO_PRIMARY_OFFSET_Y = 1;
-const BROWSER_DEMO_SECONDARY_OFFSET_X = 3;
+// Browser-only showcase controls. The desktop Electron canvas does not carry
+// the correction-canvas class, so both showcase uniforms remain disabled there.
+const BROWSER_DEMO_GHOST_MIX = 1.0;
+const BROWSER_DEMO_GHOST_OFFSET_X = 20;
+const BROWSER_DEMO_GHOST_OFFSET_Y = 3;
 
 export class CorrectionRenderer {
   private canvas: HTMLCanvasElement;
@@ -83,6 +78,8 @@ export class CorrectionRenderer {
       'u_blendRadius',
       'u_strength',
       'u_enabled',
+      'u_browserGhostMix',
+      'u_browserGhostOffsetPx',
     ] as const;
 
     for (const name of uniformNames) {
@@ -90,6 +87,18 @@ export class CorrectionRenderer {
       if (loc !== null) {
         this.uniformLocations.set(name, loc);
       }
+    }
+
+    const browserShowcase = this.canvas.classList.contains('correction-canvas');
+    const ghostMixLoc = this.uniformLocations.get('u_browserGhostMix');
+    const ghostOffsetLoc = this.uniformLocations.get('u_browserGhostOffsetPx');
+    if (ghostMixLoc) gl.uniform1f(ghostMixLoc, browserShowcase ? BROWSER_DEMO_GHOST_MIX : 0);
+    if (ghostOffsetLoc) {
+      gl.uniform2f(
+        ghostOffsetLoc,
+        browserShowcase ? BROWSER_DEMO_GHOST_OFFSET_X : 0,
+        browserShowcase ? BROWSER_DEMO_GHOST_OFFSET_Y : 0,
+      );
     }
   }
 
@@ -118,11 +127,7 @@ export class CorrectionRenderer {
     const { gl } = this;
     const kernelLoc = this.uniformLocations.get('u_kernel');
     const sizeLoc = this.uniformLocations.get('u_kernelSize');
-    const uploadedKernel = this.canvas.classList.contains('correction-canvas')
-      ? buildBrowserShowcaseKernel(kernelData, kernelSize)
-      : kernelData;
-
-    if (kernelLoc && uploadedKernel.length > 0) gl.uniform1fv(kernelLoc, uploadedKernel);
+    if (kernelLoc && kernelData.length > 0) gl.uniform1fv(kernelLoc, kernelData);
     if (sizeLoc) gl.uniform1i(sizeLoc, kernelSize);
   }
 
@@ -191,48 +196,6 @@ export class CorrectionRenderer {
 // ---------------------------------------------------------------------------
 // Module-level helpers
 // ---------------------------------------------------------------------------
-
-function amplifyKernelAroundIdentity(
-  kernelData: Float32Array,
-  gain: number,
-): Float32Array {
-  const centerIndex = Math.floor(kernelData.length / 2);
-  const amplified = new Float32Array(kernelData.length);
-
-  for (let i = 0; i < kernelData.length; i++) {
-    const identity = i === centerIndex ? 1 : 0;
-    amplified[i] = identity + gain * (kernelData[i] - identity);
-  }
-
-  return amplified;
-}
-
-function buildBrowserShowcaseKernel(
-  kernelData: Float32Array,
-  kernelSize: number,
-): Float32Array {
-  if (kernelSize < 3 || kernelData.length === 0) return kernelData;
-
-  const half = Math.floor(kernelSize / 2);
-  const centerIndex = half * kernelSize + half;
-  const showcase = amplifyKernelAroundIdentity(kernelData, BROWSER_DEMO_BASE_GAIN);
-
-  const primaryX = Math.min(BROWSER_DEMO_PRIMARY_OFFSET_X, half);
-  const primaryY = Math.min(BROWSER_DEMO_PRIMARY_OFFSET_Y, half);
-  const secondaryX = Math.min(BROWSER_DEMO_SECONDARY_OFFSET_X, half);
-  const primaryIndex = (half + primaryY) * kernelSize + (half + primaryX);
-  const secondaryIndex = half * kernelSize + (half + secondaryX);
-  const displacedEnergy = BROWSER_DEMO_PRIMARY_GHOST + BROWSER_DEMO_SECONDARY_GHOST;
-
-  // Add two displaced positive lobes and remove the same energy from the
-  // centre tap. The zero-sum modification preserves uniform regions while
-  // producing clear duplicate contours around text and other hard edges.
-  showcase[centerIndex] -= displacedEnergy;
-  showcase[primaryIndex] += BROWSER_DEMO_PRIMARY_GHOST;
-  showcase[secondaryIndex] += BROWSER_DEMO_SECONDARY_GHOST;
-
-  return showcase;
-}
 
 export function compileShader(
   gl: WebGL2RenderingContext,

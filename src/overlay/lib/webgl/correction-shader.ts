@@ -17,6 +17,8 @@ import {
  *   u_blendRadius:  pixels of fade zone beyond foveal
  *   u_strength:     0.0-1.0 blend from original to corrected luminance
  *   u_enabled:      kill switch
+ *   u_browserGhostMix: browser-only showcase control, 0.0 in the desktop overlay
+ *   u_browserGhostOffsetPx: browser-only displaced edge-copy offset in pixels
  */
 
 export const CORRECTION_VERT_SOURCE: string = `#version 300 es
@@ -43,6 +45,8 @@ uniform float     u_fovealRadius;
 uniform float     u_blendRadius;
 uniform float     u_strength;
 uniform bool      u_enabled;
+uniform float     u_browserGhostMix;
+uniform vec2      u_browserGhostOffsetPx;
 
 vec3 rgbToYCbCr(vec3 rgb) {
   return vec3(
@@ -104,7 +108,24 @@ void main() {
   // Luma-only correction reduces colour fringing from negative kernel sidelobes.
   vec3 originalYCC = rgbToYCbCr(original.rgb);
   vec3 correctedYCC = rgbToYCbCr(corrected.rgb);
-  vec3 lumaOnly = yCbCrToRgb(vec3(correctedYCC.x, originalYCC.y, originalYCC.z));
+  float correctedLuma = correctedYCC.x;
+
+  // The public browser demo can deliberately expose a much more legible
+  // pre-correction pattern than the desktop default. Two displaced luma samples
+  // create separated edge copies while subtracting the local source luma. Flat
+  // regions therefore remain unchanged instead of becoming a bright spotlight.
+  // Desktop rendering sets u_browserGhostMix to zero and skips this branch.
+  if (u_browserGhostMix > 0.001) {
+    vec2 farOffset = u_browserGhostOffsetPx / u_resolution;
+    vec2 nearOffset = farOffset * 0.45;
+    float farLuma = rgbToYCbCr(texture(u_image, clamp(v_texCoord + farOffset, 0.001, 0.999)).rgb).x;
+    float nearLuma = rgbToYCbCr(texture(u_image, clamp(v_texCoord + nearOffset, 0.001, 0.999)).rgb).x;
+    correctedLuma += u_browserGhostMix * 0.45 * (farLuma - originalYCC.x);
+    correctedLuma += u_browserGhostMix * 0.18 * (nearLuma - originalYCC.x);
+    correctedLuma = clamp(correctedLuma, 0.0, 1.0);
+  }
+
+  vec3 lumaOnly = yCbCrToRgb(vec3(correctedLuma, originalYCC.y, originalYCC.z));
 
   vec3 finalColor = mix(original.rgb, lumaOnly, u_strength);
 
