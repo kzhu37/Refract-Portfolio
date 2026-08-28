@@ -111,8 +111,8 @@ function QuickActionCard({ label, description, path, Icon }: QuickAction) {
 
 const QUICK_ACTIONS: QuickAction[] = [
   {
-    label: 'Exam',
-    description: 'Start a guided vision check',
+    label: 'Guided Check',
+    description: 'Explore the heuristic vision workflow',
     path: '/exam',
     Icon: ({ className }) => (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none"

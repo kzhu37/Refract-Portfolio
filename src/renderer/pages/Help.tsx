@@ -210,27 +210,27 @@ function EyeDiagramHalf({
 const FAQS = [
   {
     q: 'Do I need my glasses while using Refract?',
-    a: 'Nope! That\'s the whole point. Refract adjusts your screen so you can see it clearly without glasses. You can still wear them if you like, but try without first.',
+    a: 'Refract is not a replacement for glasses or contacts. Keep using the vision correction recommended by your eye-care professional for ordinary use. If you explore the prototype without it, treat the result only as an experiment and stop if the display feels uncomfortable.',
   },
   {
     q: 'What does "Plano" mean on my prescription?',
-    a: '"Plano" is just a fancy way of saying zero. It means that eye doesn\'t need a sphere correction. It\'s perfectly fine to leave it as 0.00.',
+    a: '"Plano" means zero sphere power. It does not mean the eye has no other vision needs, since cylinder, add, and other factors can still matter.',
   },
   {
-    q: 'What if I only have one eye that needs correction?',
-    a: 'That\'s totally normal! You can choose OD (right eye only) or OS (left eye only) in the correction panel. No need to apply correction to a perfectly healthy eye.',
+    q: 'What if my two eyes have different prescriptions?',
+    a: 'Refract stores separate OD and OS model inputs, but the current screen-level renderer applies one selected eye profile at a time. That is a software limitation, not a statement about what either eye medically needs.',
   },
   {
-    q: 'Why does my prescription have so many numbers?',
-    a: 'Each number fixes a different thing: sphere fixes basic blurry-ness, cylinder fixes the "football-shaped" distortion, and axis tells us which direction to fix it. Together they describe the exact shape of your eye.',
+    q: 'Why does my prescription have several numbers?',
+    a: 'Sphere, cylinder, and axis describe parts of refractive correction. Refract uses those values as inputs to an approximate display model, but they do not fully describe the eye or its optics.',
   },
   {
-    q: 'Is it safe to use Refract for long periods?',
-    a: 'Yes! Refract doesn\'t emit anything or change your eyes. It just adjusts pixels on your screen, much like your glasses bend light. Your eyes are completely safe.',
+    q: 'Is Refract validated for long periods of use?',
+    a: 'No. Refract has not been clinically validated for long-term use or safety. The prototype changes displayed pixels, but strong processing can feel harsh or disorienting. Use conservative settings, stop if the display feels uncomfortable, and do not treat Refract as vision care.',
   },
   {
-    q: 'What\'s the difference between nearsighted and farsighted?',
-    a: 'Nearsighted (minus numbers) = you can see things NEAR you clearly, but things FAR away are blurry. Farsighted (plus numbers) = you can see FAR things more clearly, but things close up may blur. Remember: Near = Minus, Far = Plus.',
+    q: 'What is the difference between myopia and hyperopia?',
+    a: 'Myopia is commonly associated with minus sphere values and difficulty focusing distant detail without correction. Hyperopia is commonly associated with plus sphere values and can increase focusing demands, especially at closer distances. Individual vision varies.',
   },
 ]
 
@@ -280,7 +280,7 @@ export function Help() {
 
       <PageHeader
         title="Understanding Your Vision"
-        description="No confusing doctor words here. We explain everything in plain, simple language, as if you're hearing it for the first time."
+        description="A plain-language guide to the prescription terms and prototype controls Refract uses. These explanations are educational and are not medical advice."
         className="help-header"
         eyebrow={<div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -353,11 +353,11 @@ export function Help() {
         <Card
           icon={<CircleIcon color={T.blue} />}
           title="Sphere (SPH)"
-          tag="How blurry your basic vision is"
+          tag="The spherical power recorded in a prescription"
           accent={T.blue}
         >
           <p style={{ marginBottom: 12 }}>
-            Sphere is the main number. It tells us how much your eyes need help to see clearly.
+            Sphere is the main spherical refractive value in a glasses prescription. Refract uses it as one input to its approximate display model.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{
@@ -369,9 +369,9 @@ export function Help() {
                 minWidth: 28, lineHeight: 1.2, fontFamily: 'JetBrains Mono, monospace',
               }}>-</span>
               <div>
-                <strong style={{ color: T.text, fontSize: 14 }}>Minus numbers = Nearsighted</strong>
+                <strong style={{ color: T.text, fontSize: 14 }}>Minus sphere values are commonly used for myopia</strong>
                 <p style={{ color: T.textSec, fontSize: 13, marginTop: 3, lineHeight: 1.6 }}>
-                  You see close things (like your phone) just fine, but faraway things (like a road sign) look fuzzy.
+                  Myopia commonly makes distant detail harder to focus without appropriate correction. Individual vision varies.
                 </p>
               </div>
             </div>
@@ -384,9 +384,9 @@ export function Help() {
                 minWidth: 28, lineHeight: 1.2, fontFamily: 'JetBrains Mono, monospace',
               }}>+</span>
               <div>
-                <strong style={{ color: T.text, fontSize: 14 }}>Plus numbers = Farsighted</strong>
+                <strong style={{ color: T.text, fontSize: 14 }}>Plus sphere values are commonly used for hyperopia</strong>
                 <p style={{ color: T.textSec, fontSize: 13, marginTop: 3, lineHeight: 1.6 }}>
-                  Faraway things are usually okay, but up-close reading or screens may be the hard part.
+                  Hyperopia can affect focusing demands, especially at closer distances, but the experience varies with age and accommodation.
                 </p>
               </div>
             </div>
@@ -399,27 +399,26 @@ export function Help() {
                 minWidth: 28, lineHeight: 1.6, fontFamily: 'JetBrains Mono, monospace',
               }}>0</span>
               <div>
-                <strong style={{ color: T.text, fontSize: 14 }}>Zero or "Plano" = No correction needed</strong>
+                <strong style={{ color: T.text, fontSize: 14 }}>Zero or "Plano" = zero sphere power</strong>
                 <p style={{ color: T.textSec, fontSize: 13, marginTop: 3, lineHeight: 1.6 }}>
-                  That eye is perfect at basic focusing. Lucky!
+                  This only describes the sphere field. Other prescription values or visual factors can still matter.
                 </p>
               </div>
             </div>
           </div>
           <p style={{ marginTop: 14, fontSize: 14, color: T.textTert }}>
-            Bigger number (ignoring + or -) = stronger prescription = thicker glasses lens.
+            A larger absolute sphere value means more spherical lens power. It does not by itself describe overall vision or lens thickness.
           </p>
         </Card>
 
         <Card
           icon={<FootballIcon color={T.amber} />}
           title="Cylinder (CYL)"
-          tag="Whether your eye is round like a ball or oval like a football"
+          tag="The cylindrical lens power used to correct astigmatism"
           accent={T.amber}
         >
           <p style={{ marginBottom: 12 }}>
-            Cylinder is all about <strong style={{ color: T.text }}>astigmatism</strong>, a long word that just means
-            "your eye isn't a perfect round ball shape."
+            Cylinder records the amount of <strong style={{ color: T.text }}>cylindrical correction</strong> used for astigmatism. The familiar ball-versus-football analogy is only a rough teaching picture of directional optical differences.
           </p>
           <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
             <div style={{
@@ -431,7 +430,7 @@ export function Help() {
                 <circle cx="30" cy="30" r="22" fill="none" stroke={T.green} strokeWidth="2" />
               </svg>
               <div style={{ fontSize: 13, fontWeight: 600, color: T.green }}>CYL = 0</div>
-              <div style={{ fontSize: 12, color: T.textTert, marginTop: 4 }}>Nice round eye, no astigmatism</div>
+              <div style={{ fontSize: 12, color: T.textTert, marginTop: 4 }}>No cylinder power is specified here</div>
             </div>
             <div style={{
               flex: 1, textAlign: 'center' as const,
@@ -442,7 +441,7 @@ export function Help() {
                 <ellipse cx="30" cy="30" rx="26" ry="16" fill="none" stroke={T.amber} strokeWidth="2" />
               </svg>
               <div style={{ fontSize: 13, fontWeight: 600, color: T.amber }}>CYL ≠ 0</div>
-              <div style={{ fontSize: 12, color: T.textTert, marginTop: 4 }}>Oval-shaped eye with astigmatism</div>
+              <div style={{ fontSize: 12, color: T.textTert, marginTop: 4 }}>Cylinder correction is specified</div>
             </div>
           </div>
           <p style={{ fontSize: 14, color: T.textSec, lineHeight: 1.7 }}>
@@ -453,11 +452,11 @@ export function Help() {
         <Card
           icon={<CompassIcon color={T.teal} />}
           title="Axis"
-          tag="Which direction your eye is oval-shaped (only matters if you have cylinder)"
+          tag="Orientation of the cylindrical correction"
           accent={T.teal}
         >
           <p style={{ marginBottom: 14 }}>
-            Axis is a number from <strong style={{ color: T.text }}>1 to 180</strong>. Think of it like a compass angle.
+            Axis is an angle from <strong style={{ color: T.text }}>1 to 180 degrees</strong> that specifies the orientation of cylinder correction in a prescription.
           </p>
           <div style={{
             display: 'flex', gap: 16, alignItems: 'center',
@@ -475,7 +474,7 @@ export function Help() {
                 fontWeight="600">45°</text>
             </svg>
             <p style={{ fontSize: 14, color: T.textSec, lineHeight: 1.7 }}>
-              The axis angle tells Refract exactly which direction to apply the correction so it lines up perfectly with how your eye is shaped.
+              Refract uses the axis to rotate the directional component of its approximate point spread function in display space.
             </p>
           </div>
           <p style={{ fontSize: 13, color: T.textTert }}>
@@ -490,13 +489,13 @@ export function Help() {
           accent={T.green}
         >
           <p style={{ marginBottom: 14 }}>
-            Your glasses or contacts work by physically bending light before it hits your eye. Refract does something similar, but digitally:
+            Glasses and contacts alter light before it reaches the eye. Refract explores a different idea: preprocessing displayed content using an approximate model. It is not a digital equivalent of a corrective lens:
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
             {[
-              { n: '1', title: 'Takes your numbers', body: 'Refract reads your sphere, cylinder, and axis to understand the exact shape of your eye\'s blur.' },
-              { n: '2', title: 'Calculates the correction', body: 'It works out a mathematical "sharpening filter" that is the opposite of your eye\'s blur, like a lens in software.' },
-              { n: '3', title: 'Applies it to your screen', body: 'The correction is applied in real-time to what your screen shows, making it look clear even without glasses.' },
+              { n: '1', title: 'Reads model inputs', body: 'Refract combines sphere, cylinder, axis, viewing distance, screen scale, and a pupil assumption as inputs to an approximate display model.' },
+              { n: '2', title: 'Builds modeled blur and correction', body: 'The active path constructs a rotated anisotropic Gaussian point spread function, then derives a bounded spatial correction kernel from that model.' },
+              { n: '3', title: 'Applies localized display processing', body: 'WebGL2 blends the correction around the current point of attention while leaving the rest of the desktop untouched. A visible effect is not proof of clinical effectiveness.' },
             ].map(step => (
               <div key={step.n} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                 <div style={{
@@ -538,7 +537,7 @@ export function Help() {
       }}>
         <p style={{ fontSize: 13, color: T.textSec, lineHeight: 1.7 }}>
           <strong style={{ color: T.text }}>Not sure about your prescription?</strong>
-          {' '}You can find it on any glasses or contact lens box, or ask your eye doctor for a copy. Alternatively, use the <strong style={{ color: T.text }}>Eye Exam</strong> feature in Refract to get an estimate!
+          {' '}Use professionally measured values when you have them. The <strong style={{ color: T.text }}>Guided Vision Check</strong> can create heuristic prototype inputs for exploration, but it does not estimate a prescription.
         </p>
       </div>
 

@@ -32,7 +32,7 @@ export class TrayManager {
     this.baseIcon = iconPath ? nativeImage.createFromPath(iconPath) : this.makeFallbackIcon()
 
     this.tray = new Tray(this.baseIcon)
-    this.tray.setToolTip('Refract: Vision Correction')
+    this.tray.setToolTip('Refract: Display Correction')
 
     // Left-click toggles the main window; right-click shows the context menu.
     this.tray.on('click', () => this.mainWindow.toggle())
@@ -83,7 +83,7 @@ export class TrayManager {
       }),
 
       new MenuItem({
-        label: 'Eye Exam',
+        label: 'Guided Vision Check',
         click: () => this.mainWindow.navigate('/exam')
       }),
 

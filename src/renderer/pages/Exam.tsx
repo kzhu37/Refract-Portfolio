@@ -226,7 +226,7 @@ export function Exam() {
         {/* Fallback if results reached without snellen data */}
         {current === 'results' && (!state.snellenOD || !state.snellenOS) && (
           <div className="text-center text-text-secondary">
-            <p className="text-body-sm mb-4">Exam data incomplete.</p>
+            <p className="text-body-sm mb-4">Guided check data incomplete.</p>
             <button
               onClick={() => navigate('/exam/distance')}
               className="text-color-interactive text-body-sm hover:underline bg-transparent border-none cursor-pointer outline-none"
