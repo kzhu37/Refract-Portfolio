@@ -1,0 +1,305 @@
+name: Finalize Refract Portfolio
+
+on:
+  push:
+    branches: [refract-desktop-proof]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out portfolio branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Align presentation, application copy, and evidence boundaries
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path_str, old, new):
+              path = Path(path_str)
+              text = path.read_text()
+              if old not in text:
+                  raise SystemExit(f'Expected text not found in {path_str}: {old[:100]!r}')
+              path.write_text(text.replace(old, new, 1))
+
+          readme_browser = '''<p align="center">
+            <img src="docs/media/refract-correction-demo.gif" alt="Refract browser demo showing the real localized WebGL2 correction region moving across detailed content and switching to a directional prescription preset" width="94%">
+          </p>
+          <p align="center"><sub><strong>Live renderer evidence:</strong> captured from the real browser build. The pointer moves the localized correction region, the demo switches to a directional prescription, and the original source is briefly revealed for comparison.</sub></p>'''.replace('          ', '')
+
+          readme_desktop = '''<p align="center">
+            <img src="docs/media/refract-desktop-overlay.gif" alt="Refract Electron desktop prototype applying the real localized correction overlay to a controlled high-detail desktop scene as the system cursor moves" width="94%">
+          </p>
+          <p align="center"><sub><strong>Desktop system proof:</strong> captured from the real Electron build against a controlled high-detail desktop scene. The actual global shortcut enables the transparent correction overlay, then the system cursor moves the localized region across the captured desktop. A deliberately strong valid model profile makes the effect visible; no magnification or simulated correction is added.</sub></p>'''.replace('          ', '')
+
+          replace('README.md', readme_browser, readme_desktop)
+
+          browser_heading = '''## Interactive browser demo
+
+The public demo reuses Refract's browser-compatible PSF generation, correction-kernel generation, WebGL utilities, GLSL shader, and optional iris tracker.'''
+          browser_with_proof = '''## Interactive browser demo
+
+<p align="center">
+  <img src="docs/media/refract-correction-demo.gif" alt="Refract browser demo showing the real localized WebGL2 correction region moving across detailed content and switching to a directional prescription preset" width="94%">
+</p>
+<p align="center"><sub><strong>Public renderer proof:</strong> captured from the real browser adaptation. The pointer moves the localized correction region, the demo switches to a directional prescription, and the original source is briefly revealed for comparison.</sub></p>
+
+The public demo reuses Refract's browser-compatible PSF generation, correction-kernel generation, WebGL utilities, GLSL shader, and optional iris tracker.'''
+          replace('README.md', browser_heading, browser_with_proof)
+
+          replace(
+              'src/main/index.ts',
+              "    body: enabled ? 'Vision correction enabled' : 'Vision correction disabled'",
+              "    body: enabled ? 'Display correction enabled' : 'Display correction disabled'",
+          )
+
+          replace(
+              'src/main/tray/tray-manager.ts',
+              "    this.tray.setToolTip('Refract: Vision Correction')",
+              "    this.tray.setToolTip('Refract: Display Correction')",
+          )
+          replace(
+              'src/main/tray/tray-manager.ts',
+              "        label: 'Eye Exam',",
+              "        label: 'Guided Vision Check',",
+          )
+
+          replace(
+              'src/renderer/pages/Home.tsx',
+              "    label: 'Exam',\n    description: 'Start a guided vision check',",
+              "    label: 'Guided Check',\n    description: 'Explore the heuristic vision workflow',",
+          )
+
+          replace(
+              'src/renderer/pages/Exam.tsx',
+              '            <p className="text-body-sm mb-4">Exam data incomplete.</p>',
+              '            <p className="text-body-sm mb-4">Guided check data incomplete.</p>',
+          )
+
+          help_path = Path('src/renderer/pages/Help.tsx')
+          help_text = help_path.read_text()
+          help_replacements = [
+              (
+                  "    a: 'Nope! That\\'s the whole point. Refract adjusts your screen so you can see it clearly without glasses. You can still wear them if you like, but try without first.',",
+                  "    a: 'Refract is not a replacement for glasses or contacts. Keep using the vision correction recommended by your eye-care professional for ordinary use. If you explore the prototype without it, treat the result only as an experiment and stop if the display feels uncomfortable.',",
+              ),
+              (
+                  "    a: '\\"Plano\\" is just a fancy way of saying zero. It means that eye doesn\\'t need a sphere correction. It\\'s perfectly fine to leave it as 0.00.',",
+                  "    a: '\\"Plano\\" means zero sphere power. It does not mean the eye has no other vision needs, since cylinder, add, and other factors can still matter.',",
+              ),
+              (
+                  "    a: 'That\\'s totally normal! You can choose OD (right eye only) or OS (left eye only) in the correction panel. No need to apply correction to a perfectly healthy eye.',",
+                  "    a: 'Refract stores separate OD and OS model inputs, but the current screen-level renderer applies one selected eye profile at a time. That is a software limitation, not a statement about what either eye medically needs.',",
+              ),
+              (
+                  "    a: 'Each number fixes a different thing: sphere fixes basic blurry-ness, cylinder fixes the \\\"football-shaped\\\" distortion, and axis tells us which direction to fix it. Together they describe the exact shape of your eye.',",
+                  "    a: 'Sphere, cylinder, and axis describe parts of refractive correction. Refract uses those values as inputs to an approximate display model, but they do not fully describe the eye or its optics.',",
+              ),
+              (
+                  "    a: 'Yes! Refract doesn\\'t emit anything or change your eyes. It just adjusts pixels on your screen, much like your glasses bend light. Your eyes are completely safe.',",
+                  "    a: 'Refract has not been clinically validated for long-term use or safety. The prototype changes displayed pixels, but strong processing can feel harsh or disorienting. Use conservative settings, stop if the display feels uncomfortable, and do not treat Refract as vision care.',",
+              ),
+              (
+                  '        description="No confusing doctor words here. We explain everything in plain, simple language, as if you\'re hearing it for the first time."',
+                  '        description="A plain-language guide to the prescription terms and prototype controls Refract uses. These explanations are educational and are not medical advice."',
+              ),
+              (
+                  '          tag="How blurry your basic vision is"',
+                  '          tag="The spherical power recorded in a prescription"',
+              ),
+              (
+                  '            Sphere is the main number. It tells us how much your eyes need help to see clearly.',
+                  '            Sphere is the main spherical refractive value in a glasses prescription. Refract uses it as one input to its approximate display model.',
+              ),
+              (
+                  '                <strong style={{ color: T.text, fontSize: 14 }}>Minus numbers = Nearsighted</strong>',
+                  '                <strong style={{ color: T.text, fontSize: 14 }}>Minus sphere values are commonly used for myopia</strong>',
+              ),
+              (
+                  '                  You see close things (like your phone) just fine, but faraway things (like a road sign) look fuzzy.',
+                  '                  Myopia commonly makes distant detail harder to focus without appropriate correction. Individual vision varies.',
+              ),
+              (
+                  '                <strong style={{ color: T.text, fontSize: 14 }}>Plus numbers = Farsighted</strong>',
+                  '                <strong style={{ color: T.text, fontSize: 14 }}>Plus sphere values are commonly used for hyperopia</strong>',
+              ),
+              (
+                  '                  Faraway things are usually okay, but up-close reading or screens may be the hard part.',
+                  '                  Hyperopia can affect focusing demands, especially at closer distances, but the experience varies with age and accommodation.',
+              ),
+              (
+                  '                <strong style={{ color: T.text, fontSize: 14 }}>Zero or "Plano" = No correction needed</strong>',
+                  '                <strong style={{ color: T.text, fontSize: 14 }}>Zero or "Plano" = zero sphere power</strong>',
+              ),
+              (
+                  '                  That eye is perfect at basic focusing. Lucky!',
+                  '                  This only describes the sphere field. Other prescription values or visual factors can still matter.',
+              ),
+              (
+                  '            Bigger number (ignoring + or -) = stronger prescription = thicker glasses lens.',
+                  '            A larger absolute sphere value means more spherical lens power. It does not by itself describe overall vision or lens thickness.',
+              ),
+              (
+                  '          tag="Whether your eye is round like a ball or oval like a football"',
+                  '          tag="The cylindrical lens power used to correct astigmatism"',
+              ),
+              (
+                  '            Cylinder is all about <strong style={{ color: T.text }}>astigmatism</strong>, a long word that just means\n            "your eye isn\'t a perfect round ball shape."',
+                  '            Cylinder records the amount of <strong style={{ color: T.text }}>cylindrical correction</strong> used for astigmatism. The familiar ball-versus-football analogy is only a rough teaching picture of directional optical differences.',
+              ),
+              (
+                  '<div style={{ fontSize: 12, color: T.textTert, marginTop: 4 }}>Nice round eye, no astigmatism</div>',
+                  '<div style={{ fontSize: 12, color: T.textTert, marginTop: 4 }}>No cylinder power is specified here</div>',
+              ),
+              (
+                  '<div style={{ fontSize: 12, color: T.textTert, marginTop: 4 }}>Oval-shaped eye with astigmatism</div>',
+                  '<div style={{ fontSize: 12, color: T.textTert, marginTop: 4 }}>Cylinder correction is specified</div>',
+              ),
+              (
+                  '          tag="Which direction your eye is oval-shaped (only matters if you have cylinder)"',
+                  '          tag="Orientation of the cylindrical correction"',
+              ),
+              (
+                  '            Axis is a number from <strong style={{ color: T.text }}>1 to 180</strong>. Think of it like a compass angle.',
+                  '            Axis is an angle from <strong style={{ color: T.text }}>1 to 180 degrees</strong> that specifies the orientation of cylinder correction in a prescription.',
+              ),
+              (
+                  '              The axis angle tells Refract exactly which direction to apply the correction so it lines up perfectly with how your eye is shaped.',
+                  '              Refract uses the axis to rotate the directional component of its approximate point spread function in display space.',
+              ),
+              (
+                  '            Your glasses or contacts work by physically bending light before it hits your eye. Refract does something similar, but digitally:',
+                  '            Glasses and contacts alter light before it reaches the eye. Refract explores a different idea: preprocessing displayed content using an approximate model. It is not a digital equivalent of a corrective lens:',
+              ),
+              (
+                  "              { n: '1', title: 'Takes your numbers', body: 'Refract reads your sphere, cylinder, and axis to understand the exact shape of your eye\\'s blur.' },",
+                  "              { n: '1', title: 'Reads model inputs', body: 'Refract combines sphere, cylinder, axis, viewing distance, screen scale, and a pupil assumption as inputs to an approximate display model.' },",
+              ),
+              (
+                  "              { n: '2', title: 'Calculates the correction', body: 'It works out a mathematical \\\"sharpening filter\\\" that is the opposite of your eye\\'s blur, like a lens in software.' },",
+                  "              { n: '2', title: 'Builds modeled blur and correction', body: 'The active path constructs a rotated anisotropic Gaussian point spread function, then derives a bounded spatial correction kernel from that model.' },",
+              ),
+              (
+                  "              { n: '3', title: 'Applies it to your screen', body: 'The correction is applied in real-time to what your screen shows, making it look clear even without glasses.' },",
+                  "              { n: '3', title: 'Applies localized display processing', body: 'WebGL2 blends the correction around the current point of attention while leaving the rest of the desktop untouched. A visible effect is not proof of clinical effectiveness.' },",
+              ),
+              (
+                  "          {' '}You can find it on any glasses or contact lens box, or ask your eye doctor for a copy. Alternatively, use the <strong style={{ color: T.text }}>Eye Exam</strong> feature in Refract to get an estimate!",
+                  "          {' '}Use professionally measured values when you have them. The <strong style={{ color: T.text }}>Guided Vision Check</strong> can create heuristic prototype inputs for exploration, but it does not estimate a prescription.",
+              ),
+          ]
+
+          for old, new in help_replacements:
+              if old not in help_text:
+                  raise SystemExit(f'Expected Help copy not found: {old[:100]!r}')
+              help_text = help_text.replace(old, new, 1)
+
+          help_path.write_text(help_text)
+
+          ci_path = Path('.github/workflows/ci.yml')
+          ci_text = ci_path.read_text()
+          old_media_check = '''          const media = [...new Set(readme.match(/docs\\/media\\/[A-Za-z0-9._/-]+/g) || [])]
+          const missing = media.filter((file) => !fs.existsSync(file))
+          if (missing.length) {
+            console.error(`README references missing media:\\n${missing.join('\\n')}`)
+            process.exit(1)
+          }
+'''
+          new_media_check = '''          const media = [...new Set(readme.match(/docs\\/media\\/[A-Za-z0-9._/-]+/g) || [])]
+          const missing = media.filter((file) => !fs.existsSync(file))
+          if (missing.length) {
+            console.error(`README references missing media:\\n${missing.join('\\n')}`)
+            process.exit(1)
+          }
+
+          if (!readme.includes('docs/media/refract-desktop-overlay.gif')) {
+            console.error('README is missing the authentic Electron desktop overlay proof')
+            process.exit(1)
+          }
+
+          const help = fs.readFileSync('src/renderer/pages/Help.tsx', 'utf8')
+          const unsupportedHelpClaims = [
+            /see it clearly without glasses/i,
+            /eyes are completely safe/i,
+            /exact shape of your eye/i,
+            /making it look clear even without glasses/i,
+            /Eye Exam<\\/strong> feature.*estimate/i,
+          ]
+          if (unsupportedHelpClaims.some((pattern) => pattern.test(help))) {
+            console.error('Desktop Help copy contains an unsupported vision or safety claim')
+            process.exit(1)
+          }
+
+          const desktopPresentation = [
+            help,
+            fs.readFileSync('src/main/index.ts', 'utf8'),
+            fs.readFileSync('src/main/tray/tray-manager.ts', 'utf8'),
+            fs.readFileSync('src/renderer/pages/Home.tsx', 'utf8'),
+          ].join('\\n')
+          if (/Refract: Vision Correction|Vision correction enabled|Vision correction disabled|label: 'Eye Exam'/i.test(desktopPresentation)) {
+            console.error('Desktop presentation still contains clinical-sounding product labels')
+            process.exit(1)
+          }
+'''
+          if old_media_check not in ci_text:
+              raise SystemExit('Could not locate CI media verification block')
+          ci_path.write_text(ci_text.replace(old_media_check, new_media_check, 1))
+          PY
+
+      - name: Remove confirmed unused TensorFlow dependency
+        run: npm uninstall @tensorflow/tfjs
+
+      - name: Verify public writing uses no long dash characters
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          roots = [Path('README.md'), Path('docs'), Path('web-demo'), Path('src/renderer/pages/Help.tsx')]
+          bad = []
+          for root in roots:
+              files = [root] if root.is_file() else [p for p in root.rglob('*') if p.suffix in {'.md', '.svg', '.ts', '.tsx', '.css', '.html'}]
+              for path in files:
+                  text = path.read_text(errors='ignore')
+                  if '\u2014' in text or '\u2013' in text:
+                      bad.append(str(path))
+          if bad:
+              raise SystemExit('Long dash characters found in: ' + ', '.join(bad))
+          print('No em dash or en dash characters found in public portfolio writing.')
+          PY
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Verify numerical invariants
+        run: npm test
+
+      - name: Build desktop application
+        run: npm run build
+
+      - name: Build browser demo
+        run: npm run build:web-demo
+
+      - name: Commit polished portfolio state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/finalize-portfolio.yml
+          git add README.md .github/workflows/ci.yml package.json package-lock.json src/main/index.ts src/main/tray/tray-manager.ts src/renderer/pages/Home.tsx src/renderer/pages/Exam.tsx src/renderer/pages/Help.tsx docs/media/refract-desktop-overlay.gif
+          git commit -m "Polish Refract portfolio evidence and claim consistency"
+          git push origin HEAD:refract-desktop-proof
