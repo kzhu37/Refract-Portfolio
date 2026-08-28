@@ -5,6 +5,7 @@ import {
 } from '../src/shared/correction-constants'
 import {
   blurRadiusPixels,
+  examResultsToPrescription,
   normalizeRx,
 } from '../src/renderer/lib/optics/prescription'
 import {
@@ -13,8 +14,12 @@ import {
   computePSF,
   getIdentityKernel,
 } from '../src/renderer/lib/optics/psf'
+import {
+  buildFeatures,
+  fitAxis,
+} from '../src/renderer/lib/eyetracking/iris-gaze'
 import { GazeSmoother } from '../src/renderer/lib/eyetracking/gaze-smoother'
-import type { EyePrescription } from '../src/renderer/lib/types/prescription'
+import type { ExamResult, EyePrescription } from '../src/renderer/lib/types/prescription'
 
 function approx(actual: number, expected: number, tolerance = 1e-9): void {
   assert.ok(
@@ -211,6 +216,49 @@ function testGazeSmoother(): void {
   assert.deepEqual(smoother.update(7, 9, 1000), { x: 7, y: 9 })
 }
 
+function testGuidedWorkflowDoesNotInventConfidence(): void {
+  const makeResult = (eye: 'OD' | 'OS'): ExamResult => ({
+    snellenLine: 40,
+    estimatedSphere: -0.75,
+    astigmatismAngle: 90,
+    estimatedCylinder: 0.5,
+    eye,
+    rawResponses: {},
+  })
+
+  const rx = examResultsToPrescription(
+    makeResult('OD'),
+    makeResult('OS'),
+    { pixelsPerMm: 3.78, viewingDistanceCm: 60 },
+  )
+
+  assert.equal(rx.source, 'exam')
+  assert.equal(rx.examConfidence, null)
+  assert.equal(rx.OD.sphere, -0.75)
+  assert.equal(rx.OS.sphere, -0.75)
+}
+
+function testPolynomialGazeFitRecoversKnownMapping(): void {
+  const samples: Array<[number, number]> = [
+    [-1, -1], [0, -1], [1, -1],
+    [-1, 0], [0, 0], [1, 0],
+    [-1, 1], [0, 1], [1, 1],
+  ]
+  const expected = [120, 35, -22, 8, 5, -3]
+  const rows = samples.map(([x, y]) => buildFeatures(x, y))
+  const targets = rows.map((row) => row.reduce((total, value, i) => total + value * expected[i], 0))
+
+  const fitted = fitAxis(rows, targets)
+  assert.ok(fitted)
+  fitted!.forEach((value, i) => approx(value, expected[i], 1e-8))
+}
+
+function testPolynomialGazeFitRejectsDegenerateData(): void {
+  const rows = Array.from({ length: 9 }, () => buildFeatures(0, 0))
+  const fitted = fitAxis(rows, Array.from({ length: 9 }, (_, i) => i * 10))
+  assert.equal(fitted, null)
+}
+
 const tests: Array<[string, () => void]> = [
   ['Gaussian kernel normalization', testGaussianNormalization],
   ['Gaussian input guards', testGaussianRejectsInvalidInputs],
@@ -222,6 +270,9 @@ const tests: Array<[string, () => void]> = [
   ['Prescription normalization', testPrescriptionNormalization],
   ['Single strength application', testCorrectionKernelStrengthSemantics],
   ['Gaze smoother stability', testGazeSmoother],
+  ['Guided workflow confidence boundary', testGuidedWorkflowDoesNotInventConfidence],
+  ['Polynomial gaze fit recovery', testPolynomialGazeFitRecoversKnownMapping],
+  ['Polynomial gaze fit degeneracy guard', testPolynomialGazeFitRejectsDegenerateData],
 ]
 
 for (const [name, test] of tests) {
