@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="430" viewBox="0 0 1200 430" role="img" aria-labelledby="title desc">
+  <title id="title">How Refract developed</title>
+  <desc id="desc">A five-stage timeline from the collaborative core prototype through user testing, interface refinement, desktop productization, and public demo verification.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070B1E"/>
+      <stop offset="1" stop-color="#10183B"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7B5CF0"/>
+      <stop offset="1" stop-color="#4B8AF0"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#4B8AF0"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="430" rx="28" fill="url(#bg)"/>
+  <text x="70" y="72" fill="#FFFFFF" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="34" font-weight="700">How Refract developed</text>
+  <text x="70" y="106" fill="#8BADC8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17">The project moved from technical exploration toward a more testable, usable, and verifiable system.</text>
+
+  <g font-family="Inter,Segoe UI,Arial,sans-serif">
+    <rect x="70" y="142" width="188" height="34" rx="17" fill="#182048" stroke="#7B5CF0" stroke-opacity="0.6"/>
+    <text x="164" y="164" text-anchor="middle" fill="#C8BEFF" font-size="12" font-weight="700" letter-spacing="0.8">COLLABORATIVE CORE</text>
+
+    <rect x="286" y="142" width="844" height="34" rx="17" fill="#10213D" stroke="#4B8AF0" stroke-opacity="0.55"/>
+    <text x="708" y="164" text-anchor="middle" fill="#9FC4FF" font-size="12" font-weight="700" letter-spacing="0.8">EVALUATION, REFINEMENT, PRODUCTIZATION, AND PUBLIC VERIFICATION</text>
+
+    <line x1="176" y1="248" x2="1032" y2="248" stroke="#4B8AF0" stroke-width="3" stroke-opacity="0.6" marker-end="url(#arrow)"/>
+
+    <g>
+      <circle cx="164" cy="248" r="15" fill="#7B5CF0"/>
+      <text x="164" y="253" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="700">1</text>
+      <text x="164" y="298" text-anchor="middle" fill="#FFFFFF" font-size="16" font-weight="700">Core prototype</text>
+      <text x="164" y="324" text-anchor="middle" fill="#8BADC8" font-size="13">Optics, gaze, capture,</text>
+      <text x="164" y="344" text-anchor="middle" fill="#8BADC8" font-size="13">and GPU overlay</text>
+    </g>
+
+    <g>
+      <circle cx="376" cy="248" r="15" fill="#665FEA"/>
+      <text x="376" y="253" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="700">2</text>
+      <text x="376" y="298" text-anchor="middle" fill="#FFFFFF" font-size="16" font-weight="700">User testing</text>
+      <text x="376" y="324" text-anchor="middle" fill="#8BADC8" font-size="13">Comprehension, comfort,</text>
+      <text x="376" y="344" text-anchor="middle" fill="#8BADC8" font-size="13">comparison, recovery</text>
+    </g>
+
+    <g>
+      <circle cx="588" cy="248" r="15" fill="#586FE9"/>
+      <text x="588" y="253" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="700">3</text>
+      <text x="588" y="298" text-anchor="middle" fill="#FFFFFF" font-size="16" font-weight="700">Interface refinement</text>
+      <text x="588" y="324" text-anchor="middle" fill="#8BADC8" font-size="13">Responsive layout,</text>
+      <text x="588" y="344" text-anchor="middle" fill="#8BADC8" font-size="13">accessibility, guidance</text>
+    </g>
+
+    <g>
+      <circle cx="800" cy="248" r="15" fill="#4B7FEA"/>
+      <text x="800" y="253" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="700">4</text>
+      <text x="800" y="298" text-anchor="middle" fill="#FFFFFF" font-size="16" font-weight="700">Desktop productization</text>
+      <text x="800" y="324" text-anchor="middle" fill="#8BADC8" font-size="13">Branding, icons, tray,</text>
+      <text x="800" y="344" text-anchor="middle" fill="#8BADC8" font-size="13">packaging support</text>
+    </g>
+
+    <g>
+      <circle cx="1012" cy="248" r="15" fill="#4B8AF0"/>
+      <text x="1012" y="253" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="700">5</text>
+      <text x="1012" y="298" text-anchor="middle" fill="#FFFFFF" font-size="16" font-weight="700">Public verification</text>
+      <text x="1012" y="324" text-anchor="middle" fill="#8BADC8" font-size="13">Browser adaptation,</text>
+      <text x="1012" y="344" text-anchor="middle" fill="#8BADC8" font-size="13">docs, CI, smoke tests</text>
+    </g>
+  </g>
+
+  <text x="70" y="394" fill="#4E6B8F" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13">This timeline describes project stages and does not imply that the collaborative core was developed independently.</text>
+</svg>
