@@ -20,7 +20,7 @@ function toggleCorrection(): void {
   tray?.updateCorrectionStatus(enabled, enabled ? 0.8 : 0)
   new Notification({
     title: 'Refract',
-    body: enabled ? 'Vision correction enabled' : 'Vision correction disabled'
+    body: enabled ? 'Display correction enabled' : 'Display correction disabled'
   }).show()
 }
 
