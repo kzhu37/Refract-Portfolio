@@ -457,7 +457,7 @@ export function App(): JSX.Element {
             <p className="eyebrow">Computational optics · gaze-aware rendering</p>
             <h1 id="hero-title">See Refract’s correction pipeline work in your browser.</h1>
             <p className="hero-description">
-              Move across the detail workspace to drive a localized correction region. Prescription values become a directional point-spread function, then Refract’s shared WebGL2 shader applies the active correction kernel in real time without mixing magnification into the effect.
+              Move across the detail workspace to drive a localized correction region. Prescription values become a directional point-spread function, then Refract’s shared WebGL2 shader applies the active correction kernel in real time. This browser showcase also adds separated luma edge copies so the pre-correction pattern is easier to inspect; that visibility aid is disabled in the Electron desktop renderer.
             </p>
           </div>
           <div className="scope-banner" role="note">
@@ -615,8 +615,8 @@ export function App(): JSX.Element {
         <section className="explanation-section" aria-labelledby="how-heading">
           <div className="section-intro">
             <p className="section-kicker">What is running</p>
-            <h2 id="how-heading">The browser changes the input boundary, not the optics or shader.</h2>
-            <p>The live page imports Refract’s platform-neutral prescription conversion, PSF generation, normalized unsharp kernel, WebGL utilities, and GLSL correction shader from the desktop codebase.</p>
+            <h2 id="how-heading">The browser reuses the optics and shader, with one explicit visibility aid.</h2>
+            <p>The live page imports Refract’s platform-neutral prescription conversion, PSF generation, normalized unsharp kernel, WebGL utilities, and GLSL correction shader from the desktop codebase. The page-scoped canvas additionally enables displaced luma edge copies so the pre-correction pattern is easier to inspect; the Electron overlay leaves that browser-only control at zero.</p>
           </div>
           <ol className="pipeline-cards">
             <li><span>01</span><strong>Model</strong><p>Sphere, cylinder, axis, distance, screen scale, and pupil size become a rotated anisotropic Gaussian PSF.</p></li>
@@ -633,6 +633,7 @@ export function App(): JSX.Element {
                 <ul>
                   <li>Processes only the page-owned demonstration canvas</li>
                   <li>Uses browser WebGL2, cursor events, and optional camera APIs</li>
+                  <li>Adds a disclosed edge-separation visibility aid that is disabled on desktop</li>
                   <li>Keeps all values and camera-derived points ephemeral</li>
                 </ul>
               </div>
