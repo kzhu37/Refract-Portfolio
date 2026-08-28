@@ -12,9 +12,9 @@ const QUAD_VERTICES = new Float32Array([
 ]);
 
 // The public browser showcase deliberately exaggerates the high-pass component
-// so the localized correction is easy to inspect on ordinary displays. The
-// Electron overlay has no class marker and therefore keeps the base kernel.
-const BROWSER_DEMO_KERNEL_GAIN = 2.5;
+// so the localized optical pre-correction is unmistakable on ordinary displays.
+// The Electron overlay has no class marker and therefore keeps the base kernel.
+const BROWSER_DEMO_KERNEL_GAIN = 7.0;
 
 export class CorrectionRenderer {
   private canvas: HTMLCanvasElement;
