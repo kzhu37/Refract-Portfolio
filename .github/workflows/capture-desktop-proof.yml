@@ -43,15 +43,16 @@ jobs:
           path = Path('src/main/store/electron-store.ts')
           text = path.read_text()
           needle = '  prescription: null,\n'
-          replacement = '''  prescription: {
-    OD: { sphere: -4, cylinder: -2, axis: 35, add: null, pd: 31.5 },
-    OS: { sphere: -3.5, cylinder: -1.5, axis: 110, add: null, pd: 31.5 },
-    binocularPD: 63,
-    measuredAt: new Date('2026-08-27T00:00:00Z'),
-    source: 'manual',
-    examConfidence: null
-  },
-'''
+          replacement = (
+              "  prescription: {\n"
+              "    OD: { sphere: -4, cylinder: -2, axis: 35, add: null, pd: 31.5 },\n"
+              "    OS: { sphere: -3.5, cylinder: -1.5, axis: 110, add: null, pd: 31.5 },\n"
+              "    binocularPD: 63,\n"
+              "    measuredAt: new Date('2026-08-27T00:00:00Z'),\n"
+              "    source: 'manual',\n"
+              "    examConfidence: null\n"
+              "  },\n"
+          )
           if needle not in text:
               raise SystemExit('Could not locate the default prescription slot')
           text = text.replace(needle, replacement, 1)
@@ -102,7 +103,7 @@ jobs:
                 <p>This page is intentionally dense. Fine edges, small text, repeated lines, and high-frequency patterns make the localized correction pass visible without adding magnification.</p>
                 <h2>Fine text</h2>
                 <div class="micro">Computational optics connects physical viewing assumptions to a display-space point spread function. The desktop renderer captures live screen content, applies a bounded correction kernel around the current point of attention, preserves source chroma, fades the correction boundary, and leaves the rest of the desktop untouched. Cursor tracking is used here because it is deterministic and requires no camera. This capture scene exists only to make the real system behavior easy to inspect. Refract remains an experimental engineering prototype rather than a medical device or a substitute for professional vision care. The renderer is deliberately conservative because a mathematically stronger filter is not automatically a better perceptual result. Comfort, reversibility, physical scale, and evidence boundaries are part of the engineering problem.</div>
-                <div class="grid">${'<div></div>'.repeat(24)}</div>
+                <div class="grid">PLACEHOLDER_GRID</div>
               </section>
               <section class="panel">
                 <h2 style="margin-top:0">High-frequency edge field</h2>
@@ -122,8 +123,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           path = Path('/tmp/refract-capture-scene.html')
-          text = path.read_text()
-          text = text.replace("${'<div></div>'.repeat(24)}", '<div></div>' * 24)
+          text = path.read_text().replace('PLACEHOLDER_GRID', '<div></div>' * 24)
           path.write_text(text)
           PY
 
@@ -188,8 +188,7 @@ jobs:
           original = frames[0]
           corrected = frames[3]
           diff = ImageChops.difference(original, corrected)
-          bbox = diff.getbbox()
-          if bbox is None:
+          if diff.getbbox() is None:
               raise SystemExit('Desktop capture did not show any correction change')
 
           diff_gray = diff.convert('L')
