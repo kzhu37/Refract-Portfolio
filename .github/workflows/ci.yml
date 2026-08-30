@@ -1,4 +1,4 @@
-name: Portfolio CI
+name: Refract CI
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Verify portfolio presentation and claim boundaries
+      - name: Verify documentation and claim boundaries
         run: |
           node <<'NODE'
           const fs = require('fs')
@@ -101,7 +101,7 @@ jobs:
             process.exit(1)
           }
 
-          console.log(`Portfolio presentation check passed for ${media.length} media references and ${publicFiles.length} public text files`)
+          console.log(`Documentation check passed for ${media.length} media references and ${publicFiles.length} public text files`)
           NODE
 
       - name: Install dependencies
